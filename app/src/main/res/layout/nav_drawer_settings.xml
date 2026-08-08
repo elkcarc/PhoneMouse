@@ -28,6 +28,7 @@
             android:text="@string/back" />
 
         <TextView
+            android:id="@+id/settingsTitleText"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:paddingStart="24dp"
@@ -60,7 +61,8 @@
                     android:id="@+id/languageDropdown"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:inputType="none" />
+                    android:inputType="none"
+                    android:saveEnabled="false" />
             </com.google.android.material.textfield.TextInputLayout>
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
@@ -91,7 +93,8 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:inputType="none"
-                    android:labelFor="@id/themeDropdown" />
+                    android:labelFor="@id/themeDropdown"
+                    android:saveEnabled="false" />
             </com.google.android.material.textfield.TextInputLayout>
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
@@ -120,7 +123,8 @@
                     android:id="@+id/trackpadModeDropdown"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:inputType="none" />
+                    android:inputType="none"
+                    android:saveEnabled="false" />
             </com.google.android.material.textfield.TextInputLayout>
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
@@ -146,6 +150,7 @@
                 android:orientation="horizontal">
 
                 <TextView
+                    android:id="@+id/trackpadSensitivityLabel"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
@@ -220,6 +225,7 @@
                 android:orientation="horizontal">
 
                 <TextView
+                    android:id="@+id/trackpointSensitivityLabel"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"

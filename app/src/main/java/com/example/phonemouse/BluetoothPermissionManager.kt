@@ -1,5 +1,6 @@
 package com.example.phonemouse
 
+import android.annotation.SuppressLint
 import android.Manifest
 import android.app.Activity
 import android.bluetooth.BluetoothAdapter
@@ -10,68 +11,27 @@ import android.os.Build
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 
-/**
- * Handles Bluetooth permissions and system state checks for different Android versions.
- * Simplifies the boilerplate required for discovery and connection.
- */
+/** Handles Bluetooth and Notification permission requests across different Android versions. */
 class BluetoothPermissionManager(private val activity: Activity) {
-
-    companion object {
-        const val REQUEST_CODE_BLUETOOTH_PERMISSIONS = 101
-    }
-
-    /**
-     * Set of permissions required based on API level.
-     * Android 12+ (S) requires SCAN/CONNECT/ADVERTISE.
-     * Legacy versions require generic Bluetooth and Location permissions.
-     */
+    companion object { const val REQUEST_CODE_BLUETOOTH_PERMISSIONS = 101 }
     private val permissions = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-        val base = mutableListOf(
-            Manifest.permission.BLUETOOTH_CONNECT,
-            Manifest.permission.BLUETOOTH_ADVERTISE,
-            Manifest.permission.BLUETOOTH_SCAN
-        )
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            base.add(Manifest.permission.POST_NOTIFICATIONS)
-        }
-        base.toTypedArray()
-    } else {
-        arrayOf(
-            Manifest.permission.BLUETOOTH,
-            Manifest.permission.BLUETOOTH_ADMIN,
-            Manifest.permission.ACCESS_FINE_LOCATION
-        )
-    }
+        mutableListOf(Manifest.permission.BLUETOOTH_CONNECT, Manifest.permission.BLUETOOTH_ADVERTISE, Manifest.permission.BLUETOOTH_SCAN).apply {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) add(Manifest.permission.POST_NOTIFICATIONS)
+        }.toTypedArray()
+    } else arrayOf(Manifest.permission.BLUETOOTH, Manifest.permission.BLUETOOTH_ADMIN, Manifest.permission.ACCESS_FINE_LOCATION)
 
-    /**
-     * Checks if all required Bluetooth permissions have been granted.
-     */
-    fun hasPermissions(): Boolean {
-        return permissions.all {
-            ContextCompat.checkSelfPermission(activity, it) == PackageManager.PERMISSION_GRANTED
-        }
-    }
-
-    /**
-     * Triggers the system permission request dialog.
-     */
-    fun requestPermissions() {
-        ActivityCompat.requestPermissions(activity, permissions, REQUEST_CODE_BLUETOOTH_PERMISSIONS)
-    }
-
-    /**
-     * Checks if the Bluetooth adapter is currently enabled.
-     */
-    fun isBluetoothEnabled(): Boolean {
-        val btManager = activity.getSystemService(BluetoothManager::class.java)
-        return btManager?.adapter?.isEnabled == true
-    }
-
-    /**
-     * Triggers a system dialog asking the user to turn on Bluetooth.
-     */
+    /** Returns true if all required permissions have been granted by the user. */
+    fun hasPermissions() = permissions.all { ContextCompat.checkSelfPermission(activity, it) == PackageManager.PERMISSION_GRANTED }
+    /** Triggers the system permission request dialog. */
+    fun requestPermissions() = ActivityCompat.requestPermissions(activity, permissions, REQUEST_CODE_BLUETOOTH_PERMISSIONS)
+    /** Returns true if the hardware Bluetooth adapter is currently active. */
+    fun isBluetoothEnabled() = activity.getSystemService(BluetoothManager::class.java)?.adapter?.isEnabled == true
+    /** Triggers a system dialog asking the user to enable Bluetooth. */
+    @SuppressLint("MissingPermission")
     fun requestBluetoothEnable() {
-        val enableBtIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
-        activity.startActivity(enableBtIntent)
+        try {
+            val enableBtIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
+            activity.startActivity(enableBtIntent)
+        } catch (_: SecurityException) {}
     }
 }

@@ -1,239 +1,129 @@
 package com.example.phonemouse
 
 import android.content.Context
-import android.graphics.Canvas
-import android.graphics.Paint
-import android.os.Handler
-import android.os.Looper
+import android.graphics.*
+import android.os.*
 import android.util.AttributeSet
 import android.view.MotionEvent
-import android.widget.FrameLayout
-import android.widget.ImageView
+import android.widget.*
 
-/**
- * A custom FrameLayout that acts as a trackpad.
- * It detects touch movements and renders a fading trail animation behind the user's finger.
- */
-class TrackpadView @JvmOverloads constructor(
-    context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
-) : FrameLayout(context, attrs, defStyleAttr) {
+/** Custom View for mouse input. Supports relative trackpad and absolute trackpoint modes. */
+class TrackpadView @JvmOverloads constructor(context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0) : FrameLayout(context, attrs, defStyleAttr) {
+    /** Toggle between standard relative "Trackpad" and absolute "Trackpoint" movement. */
+    var mode = "Trackpad"
+        set(v) { field = v; stopLoop(); resetIcon() }
+    /** Toggles the rendering of the fading touch trail (Relative mode only). */
+    var isTrailEnabled = true
+        set(v) { field = v; if (!v) { trail.clear(); invalidate() } }
+    /** Speed multiplier for Relative Trackpad mode. */
+    var trackpadSensitivity = 1.0f
+    /** Speed multiplier for Absolute Trackpoint mode. */
+    var trackpointSensitivity = 1.0f
+    /** Toggles the central icon animation in Trackpoint mode. */
+    var isTrackpointAnimationEnabled = true
+        set(v) { field = v; if (!v) resetIcon() }
 
-    /** Operation mode: "Trackpad" (relative) or "Trackpoint" (absolute displacement). */
-    var mode: String = "Trackpad"
-        set(value) {
-            field = value
-            stopTrackpointLoop()
-            resetIconPosition()
-        }
-
-    /** Whether the trail animation should be rendered. */
-    var isTrailEnabled: Boolean = true
-        set(value) {
-            field = value
-            if (!value) {
-                trailPoints.clear()
-                invalidate()
-            }
-        }
-
-    /** The sensitivity multiplier for standard relative movement. */
-    var trackpadSensitivity: Float = 1.0f
-
-    /** The sensitivity multiplier for absolute trackpoint movement. */
-    var trackpointSensitivity: Float = 1.0f
-
-    /** Whether the trackpoint icon should animate toward the finger. */
-    var isTrackpointAnimationEnabled: Boolean = true
-        set(value) {
-            field = value
-            if (!value) resetIconPosition()
-        }
-
-    private var onMoveListener: ((Int, Int) -> Unit)? = null
-    private var lastX = 0f
-    private var lastY = 0f
-    private var activePointerId = MotionEvent.INVALID_POINTER_ID
-
-    // Trackpoint specific
+    private var onMove: ((Int, Int) -> Unit)? = null
+    private var lx = 0f; private var ly = 0f
+    private var pid = MotionEvent.INVALID_POINTER_ID
     private val handler = Handler(Looper.getMainLooper())
-    private var trackpointX = 0f
-    private var trackpointY = 0f
-    private val trackpointIcon: ImageView? by lazy { findViewById(R.id.trackpointIcon) }
+    private var tx = 0f; private var ty = 0f
+    private val icon by lazy { findViewById<ImageView>(R.id.trackpointIcon) }
 
-    private val trackpointRunnable = object : Runnable {
+    /** Hardware-timed loop for continuous cursor movement in Trackpoint mode. */
+    private val loop = object : Runnable {
         override fun run() {
-            if (mode == "Trackpoint" && activePointerId != MotionEvent.INVALID_POINTER_ID) {
-                // Calculate normalized displacement from center
-                val centerX = width / 2f
-                val centerY = height / 2f
-                
-                val dx = ((trackpointX - centerX) / width * 100 * trackpointSensitivity).toInt()
-                val dy = ((trackpointY - centerY) / height * 100 * trackpointSensitivity).toInt()
-                
-                if (dx != 0 || dy != 0) {
-                    onMoveListener?.invoke(dx, dy)
+            if ((mode == "Trackpoint") && (pid != MotionEvent.INVALID_POINTER_ID)) {
+                val cx = width / 2f; val cy = height / 2f
+                val dx = (((tx - cx) / width) * 100 * trackpointSensitivity).toInt()
+                val dy = (((ty - cy) / height) * 100 * trackpointSensitivity).toInt()
+                if ((dx != 0) || (dy != 0)) onMove?.invoke(dx, dy)
+                if (isTrackpointAnimationEnabled) icon?.apply {
+                    translationX = (tx - cx).coerceIn(-cx + width / 4, cx - width / 4)
+                    translationY = (ty - cy).coerceIn(-cy + height / 4, cy - height / 4)
                 }
-                
-                // Update icon position to match finger (clamped to view)
-                if (isTrackpointAnimationEnabled) {
-                    trackpointIcon?.apply {
-                        translationX = (trackpointX - centerX).coerceIn(-centerX + width/4, centerX - width/4)
-                        translationY = (trackpointY - centerY).coerceIn(-centerY + height/4, centerY - height/4)
-                    }
-                }
-                
-                handler.postDelayed(this, 16) // ~60fps
+                handler.postDelayed(this, 16)
             }
         }
     }
 
-    private val trailPoints = mutableListOf<TrailPoint>()
-    private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        style = Paint.Style.FILL
-    }
-
-    /** Data class to track the position and lifespan of a trail segment. */
-    private data class TrailPoint(val x: Float, val y: Float, var alpha: Int = 200, var radius: Float = 20f)
+    private val trail = mutableListOf<Point>()
+    private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
+    /** Represents a single segment of the visual trail. */
+    private data class Point(val x: Float, val y: Float, var a: Int = 200, var r: Float = 20f)
 
     init {
-        // Required for FrameLayout to call onDraw
         setWillNotDraw(false)
-        
-        // Use theme attribute for trail color if possible, fallback to primary
-        val typedValue = android.util.TypedValue()
-        context.theme.resolveAttribute(R.attr.controlIconColor, typedValue, true)
-        paint.color = typedValue.data
+        val tv = android.util.TypedValue()
+        context.theme.resolveAttribute(R.attr.controlIconColor, tv, true)
+        paint.color = tv.data
     }
 
-    /**
-     * Sets a callback to be invoked when a movement is detected.
-     */
-    fun setOnMoveListener(listener: (Int, Int) -> Unit) {
-        onMoveListener = listener
-    }
+    /** Assigns the callback for mouse movement reports. */
+    fun setOnMoveListener(l: (Int, Int) -> Unit) { onMove = l }
 
-    override fun onTouchEvent(event: MotionEvent): Boolean {
-        when (event.actionMasked) {
+    /** Intercepts touch events to track multi-touch and trigger movement logic. */
+    override fun onTouchEvent(e: MotionEvent): Boolean {
+        when (e.actionMasked) {
             MotionEvent.ACTION_DOWN, MotionEvent.ACTION_POINTER_DOWN -> {
-                val pointerIndex = event.actionIndex
-                val x = event.getX(pointerIndex)
-                val y = event.getY(pointerIndex)
-                
-                // If we don't have an active pointer, take this one
-                if (activePointerId == MotionEvent.INVALID_POINTER_ID) {
-                    activePointerId = event.getPointerId(pointerIndex)
-                    lastX = x
-                    lastY = y
-                    trackpointX = x
-                    trackpointY = y
+                val idx = e.actionIndex
+                if (pid == MotionEvent.INVALID_POINTER_ID) {
+                    pid = e.getPointerId(idx); lx = e.getX(idx); ly = e.getY(idx); tx = lx; ty = ly
                     performClick()
-                    
-                    if (mode == "Trackpoint") {
-                        startTrackpointLoop()
-                    }
+                    if (mode == "Trackpoint") { handler.removeCallbacks(loop); handler.post(loop) }
                 }
-                
-                addTrailPoint(x, y)
+                addPoint(e.getX(idx), e.getY(idx))
                 return true
             }
             MotionEvent.ACTION_MOVE -> {
-                if (activePointerId != MotionEvent.INVALID_POINTER_ID) {
-                    val pointerIndex = event.findPointerIndex(activePointerId)
-                    if (pointerIndex != -1) {
-                        val x = event.getX(pointerIndex)
-                        val y = event.getY(pointerIndex)
-                        
+                if (pid != MotionEvent.INVALID_POINTER_ID) {
+                    val idx = e.findPointerIndex(pid)
+                    if (idx != -1) {
+                        val x = e.getX(idx); val y = e.getY(idx)
                         if (mode == "Trackpad") {
-                            val dx = ((x - lastX) * trackpadSensitivity).toInt()
-                            val dy = ((y - lastY) * trackpadSensitivity).toInt()
-                            
-                            if (dx != 0 || dy != 0) {
-                                onMoveListener?.invoke(dx, dy)
-                                lastX = x
-                                lastY = y
-                            }
-                        } else {
-                            // Update values for the loop
-                            trackpointX = x
-                            trackpointY = y
-                        }
+                            val dx = ((x - lx) * trackpadSensitivity).toInt()
+                            val dy = ((y - ly) * trackpadSensitivity).toInt()
+                            if ((dx != 0) || (dy != 0)) { onMove?.invoke(dx, dy); lx = x; ly = y }
+                        } else { tx = x; ty = y }
                     }
                 }
-                
-                // Add trail points for all active pointers
-                for (i in 0 until event.pointerCount) {
-                    addTrailPoint(event.getX(i), event.getY(i))
-                }
+                for (i in 0 until e.pointerCount) addPoint(e.getX(i), e.getY(i))
                 return true
             }
-            MotionEvent.ACTION_UP, MotionEvent.ACTION_POINTER_UP -> {
-                val pointerId = event.getPointerId(event.actionIndex)
-                if (pointerId == activePointerId) {
-                    activePointerId = MotionEvent.INVALID_POINTER_ID
-                    stopTrackpointLoop()
-                    resetIconPosition()
+            MotionEvent.ACTION_UP, MotionEvent.ACTION_POINTER_UP, MotionEvent.ACTION_CANCEL -> {
+                if (e.getPointerId(e.actionIndex) == pid || e.action == MotionEvent.ACTION_CANCEL) {
+                    pid = MotionEvent.INVALID_POINTER_ID; stopLoop(); resetIcon()
                 }
-                return true
-            }
-            MotionEvent.ACTION_CANCEL -> {
-                activePointerId = MotionEvent.INVALID_POINTER_ID
-                stopTrackpointLoop()
-                resetIconPosition()
                 return true
             }
         }
-        return super.onTouchEvent(event)
+        return super.onTouchEvent(e)
     }
 
-    private fun startTrackpointLoop() {
-        handler.removeCallbacks(trackpointRunnable)
-        handler.post(trackpointRunnable)
-    }
-
-    private fun stopTrackpointLoop() {
-        handler.removeCallbacks(trackpointRunnable)
-    }
-
-    private fun resetIconPosition() {
-        trackpointIcon?.animate()?.translationX(0f)?.translationY(0f)?.setDuration(200)?.start()
-    }
-
+    /** Terminates the continuous Trackpoint movement loop. */
+    private fun stopLoop() = handler.removeCallbacks(loop)
+    /** Smoothly returns the trackpoint icon to its central rest position. */
+    private fun resetIcon() { icon?.animate()?.translationX(0f)?.translationY(0f)?.setDuration(200)?.start() }
+    
+    /** Standard accessibility click handler. */
     override fun performClick(): Boolean {
         super.performClick()
         return true
     }
 
-    private fun addTrailPoint(x: Float, y: Float) {
-        if (isTrailEnabled) {
-            trailPoints.add(TrailPoint(x, y))
-            invalidate()
-        }
-    }
+    /** Records a new coordinate for the visual fading trail. */
+    private fun addPoint(x: Float, y: Float) { if (isTrailEnabled && mode == "Trackpad") { trail.add(Point(x, y)); invalidate() } }
 
+    /** Renders the touch trail on the canvas. */
     override fun onDraw(canvas: Canvas) {
+        if (!isTrailEnabled || mode != "Trackpad") { trail.clear(); return }
         super.onDraw(canvas)
-
-        val iterator = trailPoints.iterator()
-        while (iterator.hasNext()) {
-            val point = iterator.next()
-            
-            // Age the point first: shrink and fade
-            point.alpha -= 10
-            point.radius *= 0.95f
-
-            // If the point has expired, remove it and skip drawing
-            if (point.alpha <= 0 || point.radius < 1f) {
-                iterator.remove()
-                continue
-            }
-
-            paint.alpha = point.alpha
-            canvas.drawCircle(point.x, point.y, point.radius, paint)
+        val it = trail.iterator()
+        while (it.hasNext()) {
+            val p = it.next(); p.a -= 10; p.r *= 0.95f
+            if (p.a <= 0 || p.r < 1f) { it.remove(); continue }
+            paint.alpha = p.a; canvas.drawCircle(p.x, p.y, p.r, paint)
         }
-
-        // If there are still active points, keep animating
-        if (trailPoints.isNotEmpty()) {
-            postInvalidateOnAnimation()
-        }
+        if (trail.isNotEmpty()) postInvalidateOnAnimation()
     }
 }

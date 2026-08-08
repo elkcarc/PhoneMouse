@@ -1,172 +1,76 @@
 package com.example.phonemouse
 
 import android.app.Application
-import androidx.lifecycle.AndroidViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import androidx.lifecycle.*
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.*
 
-/**
- * ViewModel for the Main screen.
- * Orchestrates communication between the UI, the HID service, and the data repository.
- */
-class MainViewModel(application: Application) : AndroidViewModel(application) {
-    /** The low-level Bluetooth HID service instance, provided via binding. */
-    private val _mouseHidService = MutableStateFlow<MouseHidService?>(null)
-    val mouseHidService: StateFlow<MouseHidService?> = _mouseHidService.asStateFlow()
-    
-    /** Repository handling data persistence for configurations. */
-    private val repository = AutomationRepository(application)
+/** UI State owner. Orchestrates repository data and service events into a unified state stream. */
+class MainViewModel(app: Application) : AndroidViewModel(app) {
+    private val repo = AutomationRepository(app)
+    private val hid = HidServiceManager(app)
+    private val _isSettingsVisible = MutableStateFlow(value = false)
+    /** Reactive link to the low-level HID reporting service. */
+    val mouseHidService = hid.mouseHidService
 
-    /** Observable stream of all automation configurations. */
-    val configs: StateFlow<List<String>> = repository.configs
-    
-    /** Observable stream of the currently active configuration index. */
-    val selectedConfigIndex: StateFlow<Int> = repository.selectedIndex
+    /** Consolidated UI state flow derived from multiple internal and external data sources. */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val uiState = combine(
+        mouseHidService.flatMapLatest { it?.isConnected ?: flowOf(false) },
+        mouseHidService.flatMapLatest { it?.connectedDeviceName ?: flowOf(null) },
+        mouseHidService.flatMapLatest { it?.isAutomationRunning ?: flowOf(false) },
+        repo.configs, repo.selectedIndex, repo.appLanguage, repo.themeMode, _isSettingsVisible,
+        repo.trackpadMode, repo.isTrailEnabled, repo.trackpadSensitivity, repo.trackpointSensitivity, repo.isTrackpointAnimationEnabled
+    ) { p ->
+        @Suppress("UNCHECKED_CAST")
+        MainUiState(
+            isConnected = p[0] as Boolean,
+            connectedDeviceName = p[1] as? String,
+            isAutomationRunning = p[2] as Boolean,
+            configs = p[3] as List<String>,
+            selectedConfigIndex = p[4] as Int,
+            appLanguage = p[5] as String,
+            themeMode = p[6] as String,
+            isSettingsVisible = p[7] as Boolean,
+            trackpadMode = p[8] as String,
+            isTrailEnabled = p[9] as Boolean,
+            trackpadSensitivity = p[10] as Float,
+            trackpointSensitivity = p[11] as Float,
+            isTrackpointAnimationEnabled = p[12] as Boolean,
+        )
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), MainUiState())
 
-    /** Observable stream of whether the trackpad trail is enabled. */
-    val isTrailEnabled: StateFlow<Boolean> = repository.isTrailEnabled
-
-    /** Observable stream of the trackpad sensitivity multiplier. */
-    val trackpadSensitivity: StateFlow<Float> = repository.trackpadSensitivity
-
-    /** Observable stream of the trackpoint sensitivity multiplier. */
-    val trackpointSensitivity: StateFlow<Float> = repository.trackpointSensitivity
-
-    /** Observable stream of whether the trackpoint animation is enabled. */
-    val isTrackpointAnimationEnabled: StateFlow<Boolean> = repository.isTrackpointAnimationEnabled
-
-    /** Observable stream of the trackpad operation mode ("Trackpad" or "Trackpoint"). */
-    val trackpadMode: StateFlow<String> = repository.trackpadMode
-
-    /** Observable stream of the current application language code. */
-    val appLanguage: StateFlow<String> = repository.appLanguage
-
-    /**
-     * Injects the HID service instance and initializes its config.
-     */
-    fun setMouseHidService(service: MouseHidService) {
-        _mouseHidService.value = service
-        service.setConfig(repository.getActiveConfig())
+    init {
+        hid.startAndBind()
+        viewModelScope.launch { mouseHidService.collectLatest { it?.setConfig(repo.getActiveConfig()) } }
     }
 
-    /**
-     * Updates the application language code.
-     * @param languageCode The ISO 639-1 language code (e.g., "en", "es").
-     */
-    fun setLanguage(languageCode: String) {
-        repository.saveLanguage(languageCode)
-    }
+    /** Persistence setters for user preferences and trackpad parameters. */
+    fun setLanguage(l: String) = repo.saveLanguage(l)
+    fun setThemeMode(m: String) = repo.saveThemeMode(m)
+    fun setTrackpadMode(m: String) = repo.saveTrackpadMode(m)
+    fun setTrailEnabled(e: Boolean) = repo.saveTrailEnabled(e)
+    fun setTrackpadSensitivity(v: Float) = repo.saveTrackpadSensitivity(v)
+    fun setTrackpointSensitivity(v: Float) = repo.saveTrackpointSensitivity(v)
+    fun setTrackpointAnimationEnabled(e: Boolean) = repo.saveTrackpointAnimationEnabled(e)
+    /** Toggles the navigation drawer panel visibility state. */
+    fun setSettingsVisible(v: Boolean) { _isSettingsVisible.value = v }
 
-    /**
-     * Updates whether the trackpad trail animation is enabled.
-     * @param enabled True to show the trail, false to hide it.
-     */
-    fun setTrailEnabled(enabled: Boolean) {
-        repository.saveTrailEnabled(enabled)
+    /** Logic for managing the automation variation list and selection state. */
+    fun selectConfig(i: Int) { repo.saveSelectedIndex(i); mouseHidService.value?.setConfig(repo.getActiveConfig()) }
+    fun addConfig(c: AutomationConfig) { repo.saveConfigs(repo.configs.value.toMutableList().apply { add(c.toString()) }) }
+    fun deleteConfig(i: Int) {
+        val l = repo.configs.value.toMutableList().apply { removeAt(i) }
+        val s = repo.selectedIndex.value.let { if (l.isEmpty()) 0 else if (it >= l.size) l.size - 1 else if (i < it) it - 1 else it }
+        repo.saveSelectedIndex(s); repo.saveConfigs(l); mouseHidService.value?.setConfig(repo.getActiveConfig())
     }
-
-    /**
-     * Updates the trackpad sensitivity multiplier.
-     * @param value The multiplier (e.g., 0.1 to 8.0).
-     */
-    fun setTrackpadSensitivity(value: Float) {
-        repository.saveTrackpadSensitivity(value)
+    fun moveConfig(f: Int, t: Int) {
+        val l = repo.configs.value.toMutableList().apply { add(t, removeAt(f)) }
+        val s = repo.selectedIndex.value.let { when (it) { f -> t; in (f+1)..t -> it - 1; in t until f -> it + 1; else -> it } }
+        repo.saveSelectedIndex(s); repo.saveConfigs(l); mouseHidService.value?.setConfig(repo.getActiveConfig())
     }
-
-    /**
-     * Updates the trackpoint sensitivity multiplier.
-     * @param value The multiplier (e.g., 0.1 to 8.0).
-     */
-    fun setTrackpointSensitivity(value: Float) {
-        repository.saveTrackpointSensitivity(value)
-    }
-
-    /**
-     * Updates whether the trackpoint icon animation is enabled.
-     * @param enabled True to animate, false to keep centered.
-     */
-    fun setTrackpointAnimationEnabled(enabled: Boolean) {
-        repository.saveTrackpointAnimationEnabled(enabled)
-    }
-
-    /**
-     * Updates the trackpad operation mode.
-     * @param mode "Trackpad" or "Trackpoint".
-     */
-    fun setTrackpadMode(mode: String) {
-        repository.saveTrackpadMode(mode)
-    }
-
-    /**
-     * Updates the active configuration index and notifies the HID service.
-     * @param index The new selection index in the variation list.
-     */
-    fun selectConfig(index: Int) {
-        repository.saveSelectedIndex(index)
-        mouseHidService.value?.setConfig(repository.getActiveConfig())
-    }
-
-    /**
-     * Appends a new configuration to the list and persists it.
-     * @param config The configuration to add.
-     */
-    fun addConfig(config: AutomationConfig) {
-        val newList = configs.value.toMutableList()
-        newList.add(config.toString())
-        repository.saveConfigs(newList)
-    }
-
-    /**
-     * Removes a configuration at the specified index and adjusts selection state.
-     * @param index The index of the item to delete.
-     */
-    fun deleteConfig(index: Int) {
-        val newList = configs.value.toMutableList()
-        if (index in newList.indices) {
-            newList.removeAt(index)
-            
-            var newSelected = selectedConfigIndex.value
-            if (newSelected >= newList.size) {
-                newSelected = (newList.size - 1).coerceAtLeast(0)
-            } else if (index < newSelected) {
-                newSelected--
-            }
-            
-            repository.saveSelectedIndex(newSelected)
-            repository.saveConfigs(newList)
-            mouseHidService.value?.setConfig(repository.getActiveConfig())
-        }
-    }
-
-    /**
-     * Moves a configuration from one position to another, preserving selection state.
-     * @param from The original position in the list.
-     * @param to The new destination position.
-     */
-    fun moveConfig(from: Int, to: Int) {
-        val newList = configs.value.toMutableList()
-        if (from in newList.indices && to in newList.indices) {
-            val item = newList.removeAt(from)
-            newList.add(to, item)
-            
-            var newSelected = selectedConfigIndex.value
-            when (selectedConfigIndex.value) {
-                from -> newSelected = to
-                in (from + 1)..to -> newSelected--
-                in to until from -> newSelected++
-            }
-            
-            repository.saveSelectedIndex(newSelected)
-            repository.saveConfigs(newList)
-            mouseHidService.value?.setConfig(repository.getActiveConfig())
-        }
-    }
-
-    /**
-     * Toggles the automated click loop in the HID service.
-     */
-    fun toggleAutomation() {
-        mouseHidService.value?.toggleAutomation()
-    }
+    /** Triggers the execution state of the automation clicker. */
+    fun toggleAutomation() = mouseHidService.value?.toggleAutomation()
+    /** Cleans up the background service binding. */
+    override fun onCleared() { super.onCleared(); hid.unbind() }
 }

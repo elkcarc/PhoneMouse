@@ -1,28 +1,14 @@
 package com.example.phonemouse
 
-import android.app.Notification
-import android.app.NotificationChannel
-import android.app.NotificationManager
-import android.app.PendingIntent
-import android.app.Service
+import android.app.*
 import android.content.Intent
-import android.os.Binder
-import android.os.IBinder
-import android.util.Log
+import android.os.*
 import androidx.core.app.NotificationCompat
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.launch
 
-/**
- * Foreground Service that keeps the Bluetooth HID profile registered when the app is backgrounded.
- * Prevents the system from unregistering the virtual mouse during pairing or multitasking.
- */
+/** Foreground service that holds the Bluetooth HID connection alive. */
 class BluetoothHidService : Service() {
-
     companion object {
         const val STOP_ACTION = "com.example.phonemouse.STOP_SERVICE"
         private const val CHANNEL_ID = "BluetoothHidServiceChannel"
@@ -31,86 +17,52 @@ class BluetoothHidService : Service() {
 
     private val binder = LocalBinder()
     private val serviceScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
-    
-    /** The actual logic handler for HID reports. */
+    /** The core logic handler for HID reports. */
     lateinit var mouseHidService: MouseHidService
         private set
 
-    inner class LocalBinder : Binder() {
-        fun getService(): BluetoothHidService = this@BluetoothHidService
-    }
+    inner class LocalBinder : Binder() { fun getService() = this@BluetoothHidService }
 
+    /** Initializes the HID service, notification channel, and starts the foreground task. */
     override fun onCreate() {
         super.onCreate()
-        Log.d("BluetoothHidService", "Service Created")
         mouseHidService = MouseHidService(this)
-        startForegroundService()
-        
-        // Auto-register profile on creation
+        val nm = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+        nm.createNotificationChannel(NotificationChannel(CHANNEL_ID, getString(R.string.foreground_service_notification_title), NotificationManager.IMPORTANCE_LOW))
+        startForeground(NOTIFICATION_ID, buildNotification(null))
         mouseHidService.registerProfile()
-        
-        // Observe connection state to update notification text
-        serviceScope.launch {
-            mouseHidService.connectedDeviceName.collectLatest { name ->
-                updateNotification(name)
-            }
-        }
+        serviceScope.launch { mouseHidService.connectedDeviceName.collectLatest { updateNotification(it) } }
     }
 
+    /** Handles the STOP action from the notification. */
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        if (intent?.action == STOP_ACTION) {
-            stopSelf()
-            return START_NOT_STICKY
-        }
+        if (intent?.action == STOP_ACTION) stopSelf()
         return START_STICKY
     }
 
-    override fun onBind(intent: Intent?): IBinder {
-        return binder
+    /** Returns the local binder for ViewModel interaction. */
+    override fun onBind(intent: Intent?) = binder
+
+    /** Updates the existing notification with the connected PC's name. */
+    private fun updateNotification(name: String?) {
+        val nm = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+        nm.notify(NOTIFICATION_ID, buildNotification(name))
     }
 
-    private fun startForegroundService() {
-        val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
-
-        val channel = NotificationChannel(
-            CHANNEL_ID,
-            getString(R.string.foreground_service_notification_title),
-            NotificationManager.IMPORTANCE_LOW
-        )
-        notificationManager.createNotificationChannel(channel)
-
-        startForeground(NOTIFICATION_ID, buildNotification(null))
-    }
-
-    private fun updateNotification(deviceName: String?) {
-        val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
-        notificationManager.notify(NOTIFICATION_ID, buildNotification(deviceName))
-    }
-
-    private fun buildNotification(deviceName: String?): Notification {
-        val stopIntent = Intent(this, BluetoothHidService::class.java).apply {
-            action = STOP_ACTION
-        }
-        val stopPendingIntent = PendingIntent.getService(
-            this, 0, stopIntent, PendingIntent.FLAG_IMMUTABLE
-        )
-
-        val contentText = if (deviceName != null) {
-            getString(R.string.connected_to, deviceName)
-        } else {
-            getString(R.string.foreground_service_notification_description)
-        }
-
+    /** Constructs the persistent notification with a stop button. */
+    private fun buildNotification(name: String?): Notification {
+        val stopIntent = PendingIntent.getService(this, 0, Intent(this, BluetoothHidService::class.java).apply { action = STOP_ACTION }, PendingIntent.FLAG_IMMUTABLE)
+        val text = if (name != null) getString(R.string.connected_to, name) else getString(R.string.foreground_service_notification_description)
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle(getString(R.string.foreground_service_notification_title))
-            .setContentText(contentText)
+            .setContentText(text)
             .setSmallIcon(R.mipmap.ic_launcher)
-            .setPriority(NotificationCompat.PRIORITY_LOW)
             .setOngoing(true)
-            .addAction(android.R.drawable.ic_menu_close_clear_cancel, getString(R.string.stop_mouse), stopPendingIntent)
+            .addAction(android.R.drawable.ic_menu_close_clear_cancel, getString(R.string.stop_mouse), stopIntent)
             .build()
     }
 
+    /** Cleans up coroutines and unregisters the Bluetooth profile. */
     override fun onDestroy() {
         serviceScope.cancel()
         mouseHidService.unregisterProfile()
