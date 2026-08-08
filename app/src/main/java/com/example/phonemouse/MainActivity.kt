@@ -106,7 +106,7 @@ class MainActivity : AppCompatActivity() {
                 launch {
                     service.connectedDeviceName.collect { name ->
                         if (name != null) {
-                            binding.statusBtn.text = "${getString(R.string.connected)}: $name"
+                            binding.statusBtn.text = getString(R.string.connected_to, name)
                         }
                     }
                 }
@@ -267,16 +267,17 @@ class MainActivity : AppCompatActivity() {
      * Initializes the settings panel components, including the theme selection dropdown.
      */
     private fun setupSettingsPanel() {
-        val themes = arrayOf("Auto", "Dark", "Light")
+        val themeNames = arrayOf(getString(R.string.theme_auto), getString(R.string.theme_dark), getString(R.string.theme_light))
+        val themeValues = arrayOf("Auto", "Dark", "Light")
         
         // Custom adapter that disables filtering to prevent the "one entry" bug
-        val themesAdapter = object : ArrayAdapter<String>(this, android.R.layout.simple_spinner_dropdown_item, themes) {
+        val themesAdapter = object : ArrayAdapter<String>(this, android.R.layout.simple_spinner_dropdown_item, themeNames) {
             override fun getFilter(): android.widget.Filter {
                 return object : android.widget.Filter() {
                     override fun performFiltering(constraint: CharSequence?): FilterResults {
                         val results = FilterResults()
-                        results.values = themes
-                        results.count = themes.size
+                        results.values = themeNames
+                        results.count = themeNames.size
                         return results
                     }
                     override fun publishResults(constraint: CharSequence?, results: FilterResults?) {
@@ -288,9 +289,11 @@ class MainActivity : AppCompatActivity() {
 
         binding.navDrawerSettings.themeDropdown.apply {
             setAdapter(themesAdapter)
-            setText(prefs.getString("theme_mode", "Auto"), false)
+            val currentTheme = prefs.getString("theme_mode", "Auto") ?: "Auto"
+            val currentIdx = themeValues.indexOf(currentTheme).coerceAtLeast(0)
+            setText(themeNames[currentIdx], false)
             setOnItemClickListener { _, _, position, _ ->
-                val selected = themes[position]
+                val selected = themeValues[position]
                 prefs.edit { putString("theme_mode", selected) }
                 applySavedTheme()
             }
@@ -342,23 +345,40 @@ class MainActivity : AppCompatActivity() {
         }
 
         binding.navDrawerMain.cancelAddBtn.setOnClickListener {
+            resetAddConfigInputs()
             binding.navDrawerMain.addVariationBtn.isVisible = true
             binding.navDrawerMain.addConfigCard.isVisible = false
         }
 
         binding.navDrawerMain.confirmAddBtn.setOnClickListener {
             val config = AutomationConfig(
-                binding.navDrawerMain.minIntInput.text.toString().toIntOrNull() ?: 5000,
-                binding.navDrawerMain.maxIntInput.text.toString().toIntOrNull() ?: 6000,
-                binding.navDrawerMain.minPressInput.text.toString().toIntOrNull() ?: 1000,
-                binding.navDrawerMain.maxPressInput.text.toString().toIntOrNull() ?: 1500,
-                binding.navDrawerMain.minBreakInput.text.toString().toIntOrNull() ?: 15000,
-                binding.navDrawerMain.maxBreakInput.text.toString().toIntOrNull() ?: 20000,
-                binding.navDrawerMain.delayFreqInput.text.toString().toIntOrNull() ?: 10
+                binding.navDrawerMain.minIntInput.text.toString().toIntOrNull() ?: getString(R.string.default_min_int).toInt(),
+                binding.navDrawerMain.maxIntInput.text.toString().toIntOrNull() ?: getString(R.string.default_max_int).toInt(),
+                binding.navDrawerMain.minPressInput.text.toString().toIntOrNull() ?: getString(R.string.default_min_press).toInt(),
+                binding.navDrawerMain.maxPressInput.text.toString().toIntOrNull() ?: getString(R.string.default_max_press).toInt(),
+                binding.navDrawerMain.minBreakInput.text.toString().toIntOrNull() ?: getString(R.string.default_min_break).toInt(),
+                binding.navDrawerMain.maxBreakInput.text.toString().toIntOrNull() ?: getString(R.string.default_max_break).toInt(),
+                binding.navDrawerMain.delayFreqInput.text.toString().toIntOrNull() ?: getString(R.string.default_freq).toInt()
             )
             viewModel.addConfig(config)
+            resetAddConfigInputs()
             binding.navDrawerMain.addVariationBtn.isVisible = true
             binding.navDrawerMain.addConfigCard.isVisible = false
+        }
+    }
+
+    /**
+     * Resets the automation variation input fields to their default values.
+     */
+    private fun resetAddConfigInputs() {
+        binding.navDrawerMain.apply {
+            minIntInput.setText(getString(R.string.default_min_int))
+            maxIntInput.setText(getString(R.string.default_max_int))
+            minPressInput.setText(getString(R.string.default_min_press))
+            maxPressInput.setText(getString(R.string.default_max_press))
+            minBreakInput.setText(getString(R.string.default_min_break))
+            maxBreakInput.setText(getString(R.string.default_max_break))
+            delayFreqInput.setText(getString(R.string.default_freq))
         }
     }
 

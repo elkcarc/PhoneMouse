@@ -96,7 +96,7 @@ class BluetoothHidService : Service() {
         )
 
         val contentText = if (deviceName != null) {
-            "${getString(R.string.connected)}: $deviceName"
+            getString(R.string.connected_to, deviceName)
         } else {
             getString(R.string.foreground_service_notification_description)
         }
@@ -107,7 +107,7 @@ class BluetoothHidService : Service() {
             .setSmallIcon(R.mipmap.ic_launcher)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setOngoing(true)
-            .addAction(android.R.drawable.ic_menu_close_clear_cancel, "Stop Mouse", stopPendingIntent)
+            .addAction(android.R.drawable.ic_menu_close_clear_cancel, getString(R.string.stop_mouse), stopPendingIntent)
             .build()
     }
 

@@ -29,15 +29,20 @@
     <string name="min_break_help">Min ms for long pauses.</string>
     <string name="max_break_help">Max ms for long pauses.</string>
     <string name="delay_freq_help">Frequency (1 in X) of long pauses.</string>
-    <string name="default_freq">10</string>
-    <string name="default_min_int">5000</string>
-    <string name="default_max_int">6000</string>
-    <string name="default_min_press">1000</string>
-    <string name="default_max_press">1500</string>
-    <string name="default_min_break">15000</string>
-    <string name="default_max_break">20000</string>
+    <string name="default_freq">500</string>
+    <string name="default_min_int">100</string>
+    <string name="default_max_int">300</string>
+    <string name="default_min_press">50</string>
+    <string name="default_max_press">150</string>
+    <string name="default_min_break">3000</string>
+    <string name="default_max_break">60000</string>
     <string name="trackpad_trail">Trackpad Trail</string>
     <string name="trackpad_sensitivity">Trackpad Sensitivity</string>
+    <string name="stop_mouse">Stop Mouse</string>
+    <string name="connected_to">Connected: %1$s</string>
+    <string name="theme_auto">Auto</string>
+    <string name="theme_dark">Dark</string>
+    <string name="theme_light">Light</string>
     <string name="foreground_service_notification_title">PhoneMouse Active</string>
     <string name="foreground_service_notification_description">Maintaining Bluetooth HID Connection</string>
 </resources>

@@ -29,8 +29,20 @@
     <string name="min_break_help">Мин. мс для длинных пауз.</string>
     <string name="max_break_help">Макс. мс для длинных пауз.</string>
     <string name="delay_freq_help">Частота (1 из X) длинных пауз.</string>
+    <string name="default_freq">500</string>
+    <string name="default_min_int">100</string>
+    <string name="default_max_int">300</string>
+    <string name="default_min_press">50</string>
+    <string name="default_max_press">150</string>
+    <string name="default_min_break">3000</string>
+    <string name="default_max_break">60000</string>
     <string name="trackpad_trail">След тачпада</string>
     <string name="trackpad_sensitivity">Чувствительность тачпада</string>
+    <string name="stop_mouse">Остановить мышь</string>
+    <string name="connected_to">Подключено к: %1$s</string>
+    <string name="theme_auto">Авто</string>
+    <string name="theme_dark">Темная</string>
+    <string name="theme_light">Светлая</string>
     <string name="foreground_service_notification_title">PhoneMouse Активен</string>
     <string name="foreground_service_notification_description">Поддержание Bluetooth HID соединения</string>
 </resources>
