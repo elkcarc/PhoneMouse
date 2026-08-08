@@ -38,6 +38,11 @@
     <string name="default_max_break">60000</string>
     <string name="trackpad_trail">Trackpad Trail</string>
     <string name="trackpad_sensitivity">Trackpad Sensitivity</string>
+    <string name="trackpoint_sensitivity">Trackpoint Sensitivity</string>
+    <string name="trackpoint_animation">Trackpoint Animation</string>
+    <string name="trackpad_mode">Trackpad Mode</string>
+    <string name="mode_trackpad">Trackpad (Relative)</string>
+    <string name="mode_trackpoint">Trackpoint (Absolute)</string>
     <string name="stop_mouse">Stop Mouse</string>
     <string name="connected_to">Connected: %1$s</string>
     <string name="theme_auto">Auto</string>

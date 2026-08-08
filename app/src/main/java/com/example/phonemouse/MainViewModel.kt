@@ -28,7 +28,16 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val isTrailEnabled: StateFlow<Boolean> = repository.isTrailEnabled
 
     /** Observable stream of the trackpad sensitivity multiplier. */
-    val sensitivity: StateFlow<Float> = repository.sensitivity
+    val trackpadSensitivity: StateFlow<Float> = repository.trackpadSensitivity
+
+    /** Observable stream of the trackpoint sensitivity multiplier. */
+    val trackpointSensitivity: StateFlow<Float> = repository.trackpointSensitivity
+
+    /** Observable stream of whether the trackpoint animation is enabled. */
+    val isTrackpointAnimationEnabled: StateFlow<Boolean> = repository.isTrackpointAnimationEnabled
+
+    /** Observable stream of the trackpad operation mode ("Trackpad" or "Trackpoint"). */
+    val trackpadMode: StateFlow<String> = repository.trackpadMode
 
     /** Observable stream of the current application language code. */
     val appLanguage: StateFlow<String> = repository.appLanguage
@@ -59,10 +68,34 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     /**
      * Updates the trackpad sensitivity multiplier.
-     * @param value The multiplier (e.g., 0.5 to 2.0).
+     * @param value The multiplier (e.g., 0.1 to 8.0).
      */
-    fun setSensitivity(value: Float) {
-        repository.saveSensitivity(value)
+    fun setTrackpadSensitivity(value: Float) {
+        repository.saveTrackpadSensitivity(value)
+    }
+
+    /**
+     * Updates the trackpoint sensitivity multiplier.
+     * @param value The multiplier (e.g., 0.1 to 8.0).
+     */
+    fun setTrackpointSensitivity(value: Float) {
+        repository.saveTrackpointSensitivity(value)
+    }
+
+    /**
+     * Updates whether the trackpoint icon animation is enabled.
+     * @param enabled True to animate, false to keep centered.
+     */
+    fun setTrackpointAnimationEnabled(enabled: Boolean) {
+        repository.saveTrackpointAnimationEnabled(enabled)
+    }
+
+    /**
+     * Updates the trackpad operation mode.
+     * @param mode "Trackpad" or "Trackpoint".
+     */
+    fun setTrackpadMode(mode: String) {
+        repository.saveTrackpadMode(mode)
     }
 
     /**

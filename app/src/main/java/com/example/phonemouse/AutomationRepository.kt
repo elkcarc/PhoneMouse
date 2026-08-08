@@ -25,9 +25,21 @@ class AutomationRepository(context: Context) {
     /** Flow emitting whether the trackpad trail animation is enabled. */
     val isTrailEnabled: StateFlow<Boolean> = _isTrailEnabled.asStateFlow()
 
-    private val _sensitivity = MutableStateFlow(1.0f)
+    private val _trackpadSensitivity = MutableStateFlow(3.0f)
     /** Flow emitting the current trackpad sensitivity multiplier. */
-    val sensitivity: StateFlow<Float> = _sensitivity.asStateFlow()
+    val trackpadSensitivity: StateFlow<Float> = _trackpadSensitivity.asStateFlow()
+
+    private val _trackpointSensitivity = MutableStateFlow(1.5f)
+    /** Flow emitting the current trackpoint sensitivity multiplier. */
+    val trackpointSensitivity: StateFlow<Float> = _trackpointSensitivity.asStateFlow()
+
+    private val _isTrackpointAnimationEnabled = MutableStateFlow(true)
+    /** Flow emitting whether the trackpoint icon animation is enabled. */
+    val isTrackpointAnimationEnabled: StateFlow<Boolean> = _isTrackpointAnimationEnabled.asStateFlow()
+
+    private val _trackpadMode = MutableStateFlow("Trackpad")
+    /** Flow emitting the current trackpad mode ("Trackpad" or "Trackpoint"). */
+    val trackpadMode: StateFlow<String> = _trackpadMode.asStateFlow()
 
     private val _appLanguage = MutableStateFlow("en")
     /** Flow emitting the current application language code. */
@@ -45,7 +57,10 @@ class AutomationRepository(context: Context) {
         _configs.value = if (saved.isEmpty()) emptyList() else saved.split("|")
         _selectedIndex.value = prefs.getInt("selected_config_index", 0)
         _isTrailEnabled.value = prefs.getBoolean("is_trail_enabled", true)
-        _sensitivity.value = prefs.getFloat("sensitivity", 1.0f)
+        _trackpadSensitivity.value = prefs.getFloat("trackpad_sensitivity", 3.0f)
+        _trackpointSensitivity.value = prefs.getFloat("trackpoint_sensitivity", 1.5f)
+        _isTrackpointAnimationEnabled.value = prefs.getBoolean("is_trackpoint_animation_enabled", true)
+        _trackpadMode.value = prefs.getString("trackpad_mode", "Trackpad") ?: "Trackpad"
         _appLanguage.value = prefs.getString("app_language", "en") ?: "en"
     }
 
@@ -76,10 +91,35 @@ class AutomationRepository(context: Context) {
     /**
      * Saves the trackpad sensitivity multiplier to SharedPreferences.
      */
-    fun saveSensitivity(value: Float) {
+    fun saveTrackpadSensitivity(value: Float) {
         val capped = value.coerceIn(0.1f, 8.0f)
-        _sensitivity.value = capped
-        prefs.edit { putFloat("sensitivity", capped) }
+        _trackpadSensitivity.value = capped
+        prefs.edit { putFloat("trackpad_sensitivity", capped) }
+    }
+
+    /**
+     * Saves the trackpoint sensitivity multiplier to SharedPreferences.
+     */
+    fun saveTrackpointSensitivity(value: Float) {
+        val capped = value.coerceIn(0.1f, 8.0f)
+        _trackpointSensitivity.value = capped
+        prefs.edit { putFloat("trackpoint_sensitivity", capped) }
+    }
+
+    /**
+     * Saves whether the trackpoint animation is enabled to SharedPreferences.
+     */
+    fun saveTrackpointAnimationEnabled(enabled: Boolean) {
+        _isTrackpointAnimationEnabled.value = enabled
+        prefs.edit { putBoolean("is_trackpoint_animation_enabled", enabled) }
+    }
+
+    /**
+     * Saves the trackpad operation mode ("Trackpad" or "Trackpoint") to SharedPreferences.
+     */
+    fun saveTrackpadMode(mode: String) {
+        _trackpadMode.value = mode
+        prefs.edit { putString("trackpad_mode", mode) }
     }
 
     /**

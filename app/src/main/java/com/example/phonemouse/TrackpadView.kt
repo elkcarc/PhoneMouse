@@ -3,9 +3,12 @@ package com.example.phonemouse
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Paint
+import android.os.Handler
+import android.os.Looper
 import android.util.AttributeSet
 import android.view.MotionEvent
 import android.widget.FrameLayout
+import android.widget.ImageView
 
 /**
  * A custom FrameLayout that acts as a trackpad.
@@ -14,6 +17,14 @@ import android.widget.FrameLayout
 class TrackpadView @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
 ) : FrameLayout(context, attrs, defStyleAttr) {
+
+    /** Operation mode: "Trackpad" (relative) or "Trackpoint" (absolute displacement). */
+    var mode: String = "Trackpad"
+        set(value) {
+            field = value
+            stopTrackpointLoop()
+            resetIconPosition()
+        }
 
     /** Whether the trail animation should be rendered. */
     var isTrailEnabled: Boolean = true
@@ -25,13 +36,56 @@ class TrackpadView @JvmOverloads constructor(
             }
         }
 
-    /** The sensitivity multiplier for touch movement. */
-    var sensitivity: Float = 1.0f
+    /** The sensitivity multiplier for standard relative movement. */
+    var trackpadSensitivity: Float = 1.0f
+
+    /** The sensitivity multiplier for absolute trackpoint movement. */
+    var trackpointSensitivity: Float = 1.0f
+
+    /** Whether the trackpoint icon should animate toward the finger. */
+    var isTrackpointAnimationEnabled: Boolean = true
+        set(value) {
+            field = value
+            if (!value) resetIconPosition()
+        }
 
     private var onMoveListener: ((Int, Int) -> Unit)? = null
     private var lastX = 0f
     private var lastY = 0f
     private var activePointerId = MotionEvent.INVALID_POINTER_ID
+
+    // Trackpoint specific
+    private val handler = Handler(Looper.getMainLooper())
+    private var trackpointX = 0f
+    private var trackpointY = 0f
+    private val trackpointIcon: ImageView? by lazy { findViewById(R.id.trackpointIcon) }
+
+    private val trackpointRunnable = object : Runnable {
+        override fun run() {
+            if (mode == "Trackpoint" && activePointerId != MotionEvent.INVALID_POINTER_ID) {
+                // Calculate normalized displacement from center
+                val centerX = width / 2f
+                val centerY = height / 2f
+                
+                val dx = ((trackpointX - centerX) / width * 100 * trackpointSensitivity).toInt()
+                val dy = ((trackpointY - centerY) / height * 100 * trackpointSensitivity).toInt()
+                
+                if (dx != 0 || dy != 0) {
+                    onMoveListener?.invoke(dx, dy)
+                }
+                
+                // Update icon position to match finger (clamped to view)
+                if (isTrackpointAnimationEnabled) {
+                    trackpointIcon?.apply {
+                        translationX = (trackpointX - centerX).coerceIn(-centerX + width/4, centerX - width/4)
+                        translationY = (trackpointY - centerY).coerceIn(-centerY + height/4, centerY - height/4)
+                    }
+                }
+                
+                handler.postDelayed(this, 16) // ~60fps
+            }
+        }
+    }
 
     private val trailPoints = mutableListOf<TrailPoint>()
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -70,27 +124,38 @@ class TrackpadView @JvmOverloads constructor(
                     activePointerId = event.getPointerId(pointerIndex)
                     lastX = x
                     lastY = y
+                    trackpointX = x
+                    trackpointY = y
                     performClick()
+                    
+                    if (mode == "Trackpoint") {
+                        startTrackpointLoop()
+                    }
                 }
                 
                 addTrailPoint(x, y)
                 return true
             }
             MotionEvent.ACTION_MOVE -> {
-                // Find the index of the pointer that we are tracking
                 if (activePointerId != MotionEvent.INVALID_POINTER_ID) {
                     val pointerIndex = event.findPointerIndex(activePointerId)
                     if (pointerIndex != -1) {
                         val x = event.getX(pointerIndex)
                         val y = event.getY(pointerIndex)
                         
-                        val dx = ((x - lastX) * sensitivity).toInt()
-                        val dy = ((y - lastY) * sensitivity).toInt()
-                        
-                        if (dx != 0 || dy != 0) {
-                            onMoveListener?.invoke(dx, dy)
-                            lastX = x
-                            lastY = y
+                        if (mode == "Trackpad") {
+                            val dx = ((x - lastX) * trackpadSensitivity).toInt()
+                            val dy = ((y - lastY) * trackpadSensitivity).toInt()
+                            
+                            if (dx != 0 || dy != 0) {
+                                onMoveListener?.invoke(dx, dy)
+                                lastX = x
+                                lastY = y
+                            }
+                        } else {
+                            // Update values for the loop
+                            trackpointX = x
+                            trackpointY = y
                         }
                     }
                 }
@@ -105,15 +170,32 @@ class TrackpadView @JvmOverloads constructor(
                 val pointerId = event.getPointerId(event.actionIndex)
                 if (pointerId == activePointerId) {
                     activePointerId = MotionEvent.INVALID_POINTER_ID
+                    stopTrackpointLoop()
+                    resetIconPosition()
                 }
                 return true
             }
             MotionEvent.ACTION_CANCEL -> {
                 activePointerId = MotionEvent.INVALID_POINTER_ID
+                stopTrackpointLoop()
+                resetIconPosition()
                 return true
             }
         }
         return super.onTouchEvent(event)
+    }
+
+    private fun startTrackpointLoop() {
+        handler.removeCallbacks(trackpointRunnable)
+        handler.post(trackpointRunnable)
+    }
+
+    private fun stopTrackpointLoop() {
+        handler.removeCallbacks(trackpointRunnable)
+    }
+
+    private fun resetIconPosition() {
+        trackpointIcon?.animate()?.translationX(0f)?.translationY(0f)?.setDuration(200)?.start()
     }
 
     override fun performClick(): Boolean {

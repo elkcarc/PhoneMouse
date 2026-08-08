@@ -38,6 +38,11 @@
     <string name="default_max_break">60000</string>
     <string name="trackpad_trail">触摸轨迹</string>
     <string name="trackpad_sensitivity">触控板灵敏度</string>
+    <string name="trackpoint_sensitivity">指点杆灵敏度</string>
+    <string name="trackpoint_animation">指点杆动画</string>
+    <string name="trackpad_mode">操作模式</string>
+    <string name="mode_trackpad">触控板 (相对)</string>
+    <string name="mode_trackpoint">指点杆 (绝对)</string>
     <string name="stop_mouse">停止鼠标</string>
     <string name="connected_to">已连接至: %1$s</string>
     <string name="theme_auto">自动</string>

@@ -38,6 +38,11 @@
     <string name="default_max_break">60000</string>
     <string name="trackpad_trail">След тачпада</string>
     <string name="trackpad_sensitivity">Чувствительность тачпада</string>
+    <string name="trackpoint_sensitivity">Чувствительность трекпоинта</string>
+    <string name="trackpoint_animation">Анимация трекпоинта</string>
+    <string name="trackpad_mode">Режим тачпада</string>
+    <string name="mode_trackpad">Тачпад (Относительный)</string>
+    <string name="mode_trackpoint">Трекпоинт (Абсолютный)</string>
     <string name="stop_mouse">Остановить мышь</string>
     <string name="connected_to">Подключено к: %1$s</string>
     <string name="theme_auto">Авто</string>

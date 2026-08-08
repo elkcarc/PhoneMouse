@@ -38,6 +38,11 @@
     <string name="default_max_break">60000</string>
     <string name="trackpad_trail">Estela del trackpad</string>
     <string name="trackpad_sensitivity">Sensibilidad del Trackpad</string>
+    <string name="trackpoint_sensitivity">Sensibilidad del Trackpoint</string>
+    <string name="trackpoint_animation">Animación del Trackpoint</string>
+    <string name="trackpad_mode">Modo del Trackpad</string>
+    <string name="mode_trackpad">Trackpad (Relativo)</string>
+    <string name="mode_trackpoint">Trackpoint (Absoluto)</string>
     <string name="stop_mouse">Detener Ratón</string>
     <string name="connected_to">Conectado: %1$s</string>
     <string name="theme_auto">Automático</string>

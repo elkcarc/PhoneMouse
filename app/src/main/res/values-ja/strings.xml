@@ -38,6 +38,11 @@
     <string name="default_max_break">60000</string>
     <string name="trackpad_trail">トラックパッドの軌跡</string>
     <string name="trackpad_sensitivity">トラックパッドの感度</string>
+    <string name="trackpoint_sensitivity">トラックポイントの感度</string>
+    <string name="trackpoint_animation">トラックポイントのアニメーション</string>
+    <string name="trackpad_mode">操作モード</string>
+    <string name="mode_trackpad">トラックパッド (相対)</string>
+    <string name="mode_trackpoint">トラックポイント (絶対)</string>
     <string name="stop_mouse">マウスを停止</string>
     <string name="connected_to">接続先: %1$s</string>
     <string name="theme_auto">自動</string>

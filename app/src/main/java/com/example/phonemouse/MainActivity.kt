@@ -329,14 +329,48 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        val modes = arrayOf(getString(R.string.mode_trackpad), getString(R.string.mode_trackpoint))
+        val modeValues = arrayOf("Trackpad", "Trackpoint")
+        val modesAdapter = object : ArrayAdapter<String>(this, android.R.layout.simple_spinner_dropdown_item, modes) {
+            override fun getFilter(): android.widget.Filter {
+                return object : android.widget.Filter() {
+                    override fun performFiltering(constraint: CharSequence?): FilterResults {
+                        val results = FilterResults()
+                        results.values = modes
+                        results.count = modes.size
+                        return results
+                    }
+                    override fun publishResults(constraint: CharSequence?, results: FilterResults?) {
+                        notifyDataSetChanged()
+                    }
+                }
+            }
+        }
+
+        binding.navDrawerSettings.trackpadModeDropdown.apply {
+            setAdapter(modesAdapter)
+            val currentMode = prefs.getString("trackpad_mode", "Trackpad") ?: "Trackpad"
+            val currentIdx = modeValues.indexOf(currentMode).coerceAtLeast(0)
+            setText(modes[currentIdx], false)
+            setOnItemClickListener { _, _, position, _ ->
+                viewModel.setTrackpadMode(modeValues[position])
+            }
+        }
+
         binding.navDrawerSettings.trailToggle.setOnCheckedChangeListener { _, isChecked ->
             viewModel.setTrailEnabled(isChecked)
         }
 
-        binding.navDrawerSettings.sensitivitySlider.addOnChangeListener { _, value, fromUser ->
-            if (fromUser) {
-                viewModel.setSensitivity(value)
-            }
+        binding.navDrawerSettings.trackpadSensitivitySlider.addOnChangeListener { _, value, fromUser ->
+            if (fromUser) viewModel.setTrackpadSensitivity(value)
+        }
+
+        binding.navDrawerSettings.trackpointSensitivitySlider.addOnChangeListener { _, value, fromUser ->
+            if (fromUser) viewModel.setTrackpointSensitivity(value)
+        }
+
+        binding.navDrawerSettings.trackpointAnimationToggle.setOnCheckedChangeListener { _, isChecked ->
+            viewModel.setTrackpointAnimationEnabled(isChecked)
         }
 
         binding.navDrawerMain.addVariationBtn.setOnClickListener {
@@ -408,7 +442,8 @@ class MainActivity : AppCompatActivity() {
                 // Trail toggle updates
                 launch {
                     viewModel.isTrailEnabled.collect { isEnabled ->
-                        binding.trackpad.isTrailEnabled = isEnabled
+                        val isTrackpad = viewModel.trackpadMode.value == "Trackpad"
+                        binding.trackpad.isTrailEnabled = isTrackpad && isEnabled
                         if (binding.navDrawerSettings.trailToggle.isChecked != isEnabled) {
                             binding.navDrawerSettings.trailToggle.isChecked = isEnabled
                         }
@@ -416,11 +451,64 @@ class MainActivity : AppCompatActivity() {
                 }
                 // Sensitivity updates
                 launch {
-                    viewModel.sensitivity.collect { value ->
-                        binding.trackpad.sensitivity = value
-                        binding.navDrawerSettings.sensitivityValueText.text = String.format(java.util.Locale.US, "%.1fx", value)
-                        if (binding.navDrawerSettings.sensitivitySlider.value != value) {
-                            binding.navDrawerSettings.sensitivitySlider.value = value
+                    viewModel.trackpadSensitivity.collect { value ->
+                        binding.trackpad.trackpadSensitivity = value
+                        binding.navDrawerSettings.trackpadSensitivityValueText.text = String.format(java.util.Locale.US, "%.1fx", value)
+                        if (binding.navDrawerSettings.trackpadSensitivitySlider.value != value) {
+                            binding.navDrawerSettings.trackpadSensitivitySlider.value = value
+                        }
+                    }
+                }
+                launch {
+                    viewModel.trackpointSensitivity.collect { value ->
+                        binding.trackpad.trackpointSensitivity = value
+                        binding.navDrawerSettings.trackpointSensitivityValueText.text = String.format(java.util.Locale.US, "%.1fx", value)
+                        if (binding.navDrawerSettings.trackpointSensitivitySlider.value != value) {
+                            binding.navDrawerSettings.trackpointSensitivitySlider.value = value
+                        }
+                    }
+                }
+                // Mode updates
+                launch {
+                    viewModel.trackpadMode.collect { mode ->
+                        binding.trackpad.mode = mode
+                        val isTrackpad = mode == "Trackpad"
+                        
+                        // Grey out and disable settings that don't apply to the current mode
+                        // We NO LONGER call setTrailEnabled(false) etc here, to preserve user memory
+                        
+                        binding.navDrawerSettings.trackpadTrailCard.alpha = if (isTrackpad) 1.0f else 0.5f
+                        binding.navDrawerSettings.trailToggle.isEnabled = isTrackpad
+                        // Force TrackpadView to only show trail if in Trackpad mode AND user enabled it
+                        binding.trackpad.isTrailEnabled = isTrackpad && viewModel.isTrailEnabled.value
+
+                        binding.navDrawerSettings.trackpointAnimationCard.alpha = if (!isTrackpad) 1.0f else 0.5f
+                        binding.navDrawerSettings.trackpointAnimationToggle.isEnabled = !isTrackpad
+                        // Force TrackpadView to only animate if in Trackpoint mode AND user enabled it
+                        binding.trackpad.isTrackpointAnimationEnabled = !isTrackpad && viewModel.isTrackpointAnimationEnabled.value
+                        
+                        // Grey out sensitivity sliders based on mode
+                        binding.navDrawerSettings.trackpadSensitivityCard.alpha = if (isTrackpad) 1.0f else 0.5f
+                        binding.navDrawerSettings.trackpadSensitivitySlider.isEnabled = isTrackpad
+                        
+                        binding.navDrawerSettings.trackpointSensitivityCard.alpha = if (isTrackpad) 0.5f else 1.0f
+                        binding.navDrawerSettings.trackpointSensitivitySlider.isEnabled = !isTrackpad
+                        
+                        val modes = arrayOf(getString(R.string.mode_trackpad), getString(R.string.mode_trackpoint))
+                        val modeValues = arrayOf("Trackpad", "Trackpoint")
+                        val index = modeValues.indexOf(mode).coerceAtLeast(0)
+                        if (binding.navDrawerSettings.trackpadModeDropdown.text.toString() != modes[index]) {
+                            binding.navDrawerSettings.trackpadModeDropdown.setText(modes[index], false)
+                        }
+                    }
+                }
+                // Trackpoint Animation updates
+                launch {
+                    viewModel.isTrackpointAnimationEnabled.collect { isEnabled ->
+                        val isTrackpoint = viewModel.trackpadMode.value == "Trackpoint"
+                        binding.trackpad.isTrackpointAnimationEnabled = isTrackpoint && isEnabled
+                        if (binding.navDrawerSettings.trackpointAnimationToggle.isChecked != isEnabled) {
+                            binding.navDrawerSettings.trackpointAnimationToggle.isChecked = isEnabled
                         }
                     }
                 }
