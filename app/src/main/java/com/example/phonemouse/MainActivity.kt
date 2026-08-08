@@ -1,15 +1,20 @@
 package com.example.phonemouse
 
 import android.annotation.SuppressLint
+import android.content.ComponentName
+import android.content.Context
 import android.content.Intent
+import android.content.ServiceConnection
 import android.content.res.ColorStateList
 import android.graphics.Color
 import android.os.Bundle
+import android.os.IBinder
 import android.provider.Settings
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.content.ContextCompat
 import androidx.core.content.edit
 import androidx.core.view.GravityCompat
 import androidx.core.view.ViewCompat
@@ -22,9 +27,12 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import android.view.MotionEvent
+import android.view.View
 import android.widget.ArrayAdapter
 import androidx.core.os.LocaleListCompat
 import com.example.phonemouse.databinding.ActivityMainBinding
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 /**
@@ -37,6 +45,21 @@ class MainActivity : AppCompatActivity() {
     private lateinit var permissionManager: BluetoothPermissionManager
     private lateinit var configsAdapter: ConfigsAdapter
     private val prefs by lazy { getSharedPreferences("PhoneMousePrefs", MODE_PRIVATE) }
+
+    private var hidService: BluetoothHidService? = null
+    private val serviceConnection = object : ServiceConnection {
+        override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
+            val binder = service as BluetoothHidService.LocalBinder
+            val instance = binder.getService()
+            hidService = instance
+            viewModel.setMouseHidService(instance.mouseHidService)
+            observeHidService(instance.mouseHidService)
+        }
+
+        override fun onServiceDisconnected(name: ComponentName?) {
+            hidService = null
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         // Apply theme and language early to ensure consistent layout inflation
@@ -53,18 +76,47 @@ class MainActivity : AppCompatActivity() {
         setupUI()
         observeViewModel()
         
-        // Handle Bluetooth lifecycle and permissions
-        if (permissionManager.hasPermissions()) {
-            viewModel.mouseHidService.registerProfile()
-        } else {
-            permissionManager.requestPermissions()
-        }
+        // Start and bind the Foreground Service to keep connection alive in background
+        val intent = Intent(this, BluetoothHidService::class.java)
+        ContextCompat.startForegroundService(this, intent)
+        bindService(intent, serviceConnection, BIND_AUTO_CREATE)
 
         if (!permissionManager.isBluetoothEnabled()) {
             permissionManager.requestBluetoothEnable()
         }
 
         setupWindowInsets()
+    }
+
+    /**
+     * Observes real-time status updates from the HID service.
+     */
+    private fun observeHidService(service: MouseHidService) {
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch {
+                    service.isConnected.collect { isConnected ->
+                        binding.statusBtn.backgroundTintList = ColorStateList.valueOf(if (isConnected) Color.GREEN else Color.GRAY)
+                        binding.toggleBtn.isEnabled = isConnected
+                        if (!isConnected) {
+                            binding.statusBtn.text = getString(R.string.disconnected_tap_to_open_bluetooth_settings)
+                        }
+                    }
+                }
+                launch {
+                    service.connectedDeviceName.collect { name ->
+                        if (name != null) {
+                            binding.statusBtn.text = "${getString(R.string.connected)}: $name"
+                        }
+                    }
+                }
+                launch {
+                    service.isAutomationRunning.collect { isRunning ->
+                        binding.toggleBtn.text = if (isRunning) getString(R.string.stop_automation) else getString(R.string.start_automation)
+                    }
+                }
+            }
+        }
     }
 
     /**
@@ -124,7 +176,7 @@ class MainActivity : AppCompatActivity() {
      */
     private fun setupTrackpad() {
         binding.trackpad.setOnMoveListener { dx, dy ->
-            viewModel.mouseHidService.sendManualMove(dx, dy)
+            viewModel.mouseHidService.value?.sendManualMove(dx, dy)
         }
     }
 
@@ -132,11 +184,41 @@ class MainActivity : AppCompatActivity() {
      * Configures listeners for manual scroll and click buttons.
      */
     private fun setupMouseButtons() {
-        binding.scrollUpBtn.setOnClickListener { viewModel.mouseHidService.sendManualScroll(1) }
-        binding.middleClickBtn.setOnClickListener { viewModel.mouseHidService.sendManualClick(0x04) }
-        binding.scrollDownBtn.setOnClickListener { viewModel.mouseHidService.sendManualScroll(-1) }
-        binding.leftClickBtn.setOnClickListener { viewModel.mouseHidService.sendManualClick(0x01) }
-        binding.rightClickBtn.setOnClickListener { viewModel.mouseHidService.sendManualClick(0x02) }
+        val buttonTouchListener = View.OnTouchListener { v, event ->
+            val mask: Byte = when (v.id) {
+                R.id.leftClickBtn -> 0x01
+                R.id.rightClickBtn -> 0x02
+                R.id.middleClickBtn -> 0x04
+                else -> 0x00
+            }
+
+            when (event.action) {
+                MotionEvent.ACTION_DOWN -> {
+                    v.performClick()
+                    if (mask != 0x00.toByte()) {
+                        viewModel.mouseHidService.value?.setButtonState(mask, true)
+                    } else {
+                        // Handle scroll buttons
+                        val delta = if (v.id == R.id.scrollUpBtn) 1 else -1
+                        viewModel.mouseHidService.value?.sendManualScroll(delta)
+                    }
+                    v.isPressed = true
+                }
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                    if (mask != 0x00.toByte()) {
+                        viewModel.mouseHidService.value?.setButtonState(mask, false)
+                    }
+                    v.isPressed = false
+                }
+            }
+            true
+        }
+
+        binding.leftClickBtn.setOnTouchListener(buttonTouchListener)
+        binding.rightClickBtn.setOnTouchListener(buttonTouchListener)
+        binding.middleClickBtn.setOnTouchListener(buttonTouchListener)
+        binding.scrollUpBtn.setOnTouchListener(buttonTouchListener)
+        binding.scrollDownBtn.setOnTouchListener(buttonTouchListener)
     }
 
     /**
@@ -248,6 +330,12 @@ class MainActivity : AppCompatActivity() {
             viewModel.setTrailEnabled(isChecked)
         }
 
+        binding.navDrawerSettings.sensitivitySlider.addOnChangeListener { _, value, fromUser ->
+            if (fromUser) {
+                viewModel.setSensitivity(value)
+            }
+        }
+
         binding.navDrawerMain.addVariationBtn.setOnClickListener {
             binding.navDrawerMain.addVariationBtn.isVisible = false
             binding.navDrawerMain.addConfigCard.isVisible = true
@@ -280,20 +368,6 @@ class MainActivity : AppCompatActivity() {
     private fun observeViewModel() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                // Connection status updates
-                launch {
-                    viewModel.mouseHidService.isConnected.collect { isConnected ->
-                        binding.statusBtn.text = if (isConnected) getString(R.string.connected) else getString(R.string.disconnected_tap_to_open_bluetooth_settings)
-                        binding.statusBtn.backgroundTintList = ColorStateList.valueOf(if (isConnected) Color.GREEN else Color.GRAY)
-                        binding.toggleBtn.isEnabled = isConnected
-                    }
-                }
-                // Automation status updates
-                launch {
-                    viewModel.mouseHidService.isAutomationRunning.collect { isRunning ->
-                        binding.toggleBtn.text = if (isRunning) getString(R.string.stop_automation) else getString(R.string.start_automation)
-                    }
-                }
                 // Selection index updates
                 launch {
                     viewModel.selectedConfigIndex.collect { index ->
@@ -317,6 +391,16 @@ class MainActivity : AppCompatActivity() {
                         binding.trackpad.isTrailEnabled = isEnabled
                         if (binding.navDrawerSettings.trailToggle.isChecked != isEnabled) {
                             binding.navDrawerSettings.trailToggle.isChecked = isEnabled
+                        }
+                    }
+                }
+                // Sensitivity updates
+                launch {
+                    viewModel.sensitivity.collect { value ->
+                        binding.trackpad.sensitivity = value
+                        binding.navDrawerSettings.sensitivityValueText.text = String.format(java.util.Locale.US, "%.1fx", value)
+                        if (binding.navDrawerSettings.sensitivitySlider.value != value) {
+                            binding.navDrawerSettings.sensitivitySlider.value = value
                         }
                     }
                 }
@@ -356,16 +440,15 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onDestroy() {
+        try { unbindService(serviceConnection) } catch (_: Exception) {}
         super.onDestroy()
-        // Clean up the Bluetooth registration to prevent profile leaks
-        viewModel.mouseHidService.unregisterProfile()
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == BluetoothPermissionManager.REQUEST_CODE_BLUETOOTH_PERMISSIONS) {
             if (grantResults.all { it == android.content.pm.PackageManager.PERMISSION_GRANTED }) {
-                viewModel.mouseHidService.registerProfile()
+                hidService?.mouseHidService?.registerProfile()
             }
         }
     }

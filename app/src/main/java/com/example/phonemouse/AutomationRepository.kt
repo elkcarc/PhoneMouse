@@ -25,6 +25,10 @@ class AutomationRepository(context: Context) {
     /** Flow emitting whether the trackpad trail animation is enabled. */
     val isTrailEnabled: StateFlow<Boolean> = _isTrailEnabled.asStateFlow()
 
+    private val _sensitivity = MutableStateFlow(1.0f)
+    /** Flow emitting the current trackpad sensitivity multiplier. */
+    val sensitivity: StateFlow<Float> = _sensitivity.asStateFlow()
+
     private val _appLanguage = MutableStateFlow("en")
     /** Flow emitting the current application language code. */
     val appLanguage: StateFlow<String> = _appLanguage.asStateFlow()
@@ -41,6 +45,7 @@ class AutomationRepository(context: Context) {
         _configs.value = if (saved.isEmpty()) emptyList() else saved.split("|")
         _selectedIndex.value = prefs.getInt("selected_config_index", 0)
         _isTrailEnabled.value = prefs.getBoolean("is_trail_enabled", true)
+        _sensitivity.value = prefs.getFloat("sensitivity", 1.0f)
         _appLanguage.value = prefs.getString("app_language", "en") ?: "en"
     }
 
@@ -66,6 +71,15 @@ class AutomationRepository(context: Context) {
     fun saveTrailEnabled(enabled: Boolean) {
         _isTrailEnabled.value = enabled
         prefs.edit { putBoolean("is_trail_enabled", enabled) }
+    }
+
+    /**
+     * Saves the trackpad sensitivity multiplier to SharedPreferences.
+     */
+    fun saveSensitivity(value: Float) {
+        val capped = value.coerceIn(0.1f, 8.0f)
+        _sensitivity.value = capped
+        prefs.edit { putFloat("sensitivity", capped) }
     }
 
     /**

@@ -4,12 +4,14 @@
     android:id="@+id/drawerLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:fitsSystemWindows="false">
+    android:fitsSystemWindows="false"
+    android:splitMotionEvents="true">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        android:splitMotionEvents="true">
 
         <com.google.android.material.appbar.MaterialToolbar
             android:id="@+id/toolbar"

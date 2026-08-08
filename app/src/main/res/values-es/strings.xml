@@ -30,4 +30,7 @@
     <string name="max_break_help">Ms máx para pausas largas.</string>
     <string name="delay_freq_help">Frecuencia (1 de X) de pausas largas.</string>
     <string name="trackpad_trail">Estela del trackpad</string>
+    <string name="trackpad_sensitivity">Sensibilidad del Trackpad</string>
+    <string name="foreground_service_notification_title">PhoneMouse Activo</string>
+    <string name="foreground_service_notification_description">Manteniendo la conexión Bluetooth HID</string>
 </resources>

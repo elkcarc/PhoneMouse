@@ -30,4 +30,7 @@
     <string name="max_break_help">长暂停的最大毫秒数。</string>
     <string name="delay_freq_help">长暂停出现的频率（X次点击中出现1次）。</string>
     <string name="trackpad_trail">触摸轨迹</string>
+    <string name="trackpad_sensitivity">触控板灵敏度</string>
+    <string name="foreground_service_notification_title">PhoneMouse 正在运行</string>
+    <string name="foreground_service_notification_description">正在保持蓝牙 HID 连接</string>
 </resources>

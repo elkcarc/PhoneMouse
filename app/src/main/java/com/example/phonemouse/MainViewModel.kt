@@ -2,17 +2,18 @@ package com.example.phonemouse
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.asStateFlow
 
 /**
  * ViewModel for the Main screen.
  * Orchestrates communication between the UI, the HID service, and the data repository.
  */
 class MainViewModel(application: Application) : AndroidViewModel(application) {
-    /** The low-level Bluetooth HID service. */
-    val mouseHidService = MouseHidService(application)
+    /** The low-level Bluetooth HID service instance, provided via binding. */
+    private val _mouseHidService = MutableStateFlow<MouseHidService?>(null)
+    val mouseHidService: StateFlow<MouseHidService?> = _mouseHidService.asStateFlow()
     
     /** Repository handling data persistence for configurations. */
     private val repository = AutomationRepository(application)
@@ -26,12 +27,18 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     /** Observable stream of whether the trackpad trail is enabled. */
     val isTrailEnabled: StateFlow<Boolean> = repository.isTrailEnabled
 
+    /** Observable stream of the trackpad sensitivity multiplier. */
+    val sensitivity: StateFlow<Float> = repository.sensitivity
+
     /** Observable stream of the current application language code. */
     val appLanguage: StateFlow<String> = repository.appLanguage
 
-    init {
-        // Initialize the HID service with the last saved configuration
-        mouseHidService.setConfig(repository.getActiveConfig())
+    /**
+     * Injects the HID service instance and initializes its config.
+     */
+    fun setMouseHidService(service: MouseHidService) {
+        _mouseHidService.value = service
+        service.setConfig(repository.getActiveConfig())
     }
 
     /**
@@ -51,12 +58,20 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     /**
+     * Updates the trackpad sensitivity multiplier.
+     * @param value The multiplier (e.g., 0.5 to 2.0).
+     */
+    fun setSensitivity(value: Float) {
+        repository.saveSensitivity(value)
+    }
+
+    /**
      * Updates the active configuration index and notifies the HID service.
      * @param index The new selection index in the variation list.
      */
     fun selectConfig(index: Int) {
         repository.saveSelectedIndex(index)
-        mouseHidService.setConfig(repository.getActiveConfig())
+        mouseHidService.value?.setConfig(repository.getActiveConfig())
     }
 
     /**
@@ -87,7 +102,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             
             repository.saveSelectedIndex(newSelected)
             repository.saveConfigs(newList)
-            mouseHidService.setConfig(repository.getActiveConfig())
+            mouseHidService.value?.setConfig(repository.getActiveConfig())
         }
     }
 
@@ -111,7 +126,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             
             repository.saveSelectedIndex(newSelected)
             repository.saveConfigs(newList)
-            mouseHidService.setConfig(repository.getActiveConfig())
+            mouseHidService.value?.setConfig(repository.getActiveConfig())
         }
     }
 
@@ -119,6 +134,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
      * Toggles the automated click loop in the HID service.
      */
     fun toggleAutomation() {
-        mouseHidService.toggleAutomation()
+        mouseHidService.value?.toggleAutomation()
     }
 }

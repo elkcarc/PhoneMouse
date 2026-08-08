@@ -37,4 +37,7 @@
     <string name="default_min_break">15000</string>
     <string name="default_max_break">20000</string>
     <string name="trackpad_trail">Trackpad Trail</string>
+    <string name="trackpad_sensitivity">Trackpad Sensitivity</string>
+    <string name="foreground_service_notification_title">PhoneMouse Active</string>
+    <string name="foreground_service_notification_description">Maintaining Bluetooth HID Connection</string>
 </resources>

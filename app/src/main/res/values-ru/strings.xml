@@ -30,4 +30,7 @@
     <string name="max_break_help">Макс. мс для длинных пауз.</string>
     <string name="delay_freq_help">Частота (1 из X) длинных пауз.</string>
     <string name="trackpad_trail">След тачпада</string>
+    <string name="trackpad_sensitivity">Чувствительность тачпада</string>
+    <string name="foreground_service_notification_title">PhoneMouse Активен</string>
+    <string name="foreground_service_notification_description">Поддержание Bluetooth HID соединения</string>
 </resources>

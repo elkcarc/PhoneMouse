@@ -30,4 +30,7 @@
     <string name="max_break_help">長い一時停止の最大ミリ秒。</string>
     <string name="delay_freq_help">長い一時停止の頻度 (X回に1回)。</string>
     <string name="trackpad_trail">トラックパッドの軌跡</string>
+    <string name="trackpad_sensitivity">トラックパッドの感度</string>
+    <string name="foreground_service_notification_title">PhoneMouse 有効</string>
+    <string name="foreground_service_notification_description">Bluetooth HID 接続を維持しています</string>
 </resources>

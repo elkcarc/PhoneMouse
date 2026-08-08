@@ -25,9 +25,13 @@ class TrackpadView @JvmOverloads constructor(
             }
         }
 
+    /** The sensitivity multiplier for touch movement. */
+    var sensitivity: Float = 1.0f
+
     private var onMoveListener: ((Int, Int) -> Unit)? = null
     private var lastX = 0f
     private var lastY = 0f
+    private var activePointerId = MotionEvent.INVALID_POINTER_ID
 
     private val trailPoints = mutableListOf<TrailPoint>()
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -55,25 +59,57 @@ class TrackpadView @JvmOverloads constructor(
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
-        when (event.action) {
-            MotionEvent.ACTION_DOWN -> {
-                performClick()
-                lastX = event.x
-                lastY = event.y
-                addTrailPoint(event.x, event.y)
+        when (event.actionMasked) {
+            MotionEvent.ACTION_DOWN, MotionEvent.ACTION_POINTER_DOWN -> {
+                val pointerIndex = event.actionIndex
+                val x = event.getX(pointerIndex)
+                val y = event.getY(pointerIndex)
+                
+                // If we don't have an active pointer, take this one
+                if (activePointerId == MotionEvent.INVALID_POINTER_ID) {
+                    activePointerId = event.getPointerId(pointerIndex)
+                    lastX = x
+                    lastY = y
+                    performClick()
+                }
+                
+                addTrailPoint(x, y)
                 return true
             }
             MotionEvent.ACTION_MOVE -> {
-                val dx = (event.x - lastX).toInt()
-                val dy = (event.y - lastY).toInt()
-                
-                if (dx != 0 || dy != 0) {
-                    onMoveListener?.invoke(dx, dy)
-                    lastX = event.x
-                    lastY = event.y
+                // Find the index of the pointer that we are tracking
+                if (activePointerId != MotionEvent.INVALID_POINTER_ID) {
+                    val pointerIndex = event.findPointerIndex(activePointerId)
+                    if (pointerIndex != -1) {
+                        val x = event.getX(pointerIndex)
+                        val y = event.getY(pointerIndex)
+                        
+                        val dx = ((x - lastX) * sensitivity).toInt()
+                        val dy = ((y - lastY) * sensitivity).toInt()
+                        
+                        if (dx != 0 || dy != 0) {
+                            onMoveListener?.invoke(dx, dy)
+                            lastX = x
+                            lastY = y
+                        }
+                    }
                 }
                 
-                addTrailPoint(event.x, event.y)
+                // Add trail points for all active pointers
+                for (i in 0 until event.pointerCount) {
+                    addTrailPoint(event.getX(i), event.getY(i))
+                }
+                return true
+            }
+            MotionEvent.ACTION_UP, MotionEvent.ACTION_POINTER_UP -> {
+                val pointerId = event.getPointerId(event.actionIndex)
+                if (pointerId == activePointerId) {
+                    activePointerId = MotionEvent.INVALID_POINTER_ID
+                }
+                return true
+            }
+            MotionEvent.ACTION_CANCEL -> {
+                activePointerId = MotionEvent.INVALID_POINTER_ID
                 return true
             }
         }

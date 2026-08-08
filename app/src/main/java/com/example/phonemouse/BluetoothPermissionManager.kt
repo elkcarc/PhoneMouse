@@ -26,11 +26,15 @@ class BluetoothPermissionManager(private val activity: Activity) {
      * Legacy versions require generic Bluetooth and Location permissions.
      */
     private val permissions = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-        arrayOf(
+        val base = mutableListOf(
             Manifest.permission.BLUETOOTH_CONNECT,
             Manifest.permission.BLUETOOTH_ADVERTISE,
             Manifest.permission.BLUETOOTH_SCAN
         )
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            base.add(Manifest.permission.POST_NOTIFICATIONS)
+        }
+        base.toTypedArray()
     } else {
         arrayOf(
             Manifest.permission.BLUETOOTH,
