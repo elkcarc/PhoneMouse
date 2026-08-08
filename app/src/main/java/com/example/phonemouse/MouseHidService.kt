@@ -20,55 +20,39 @@ class MouseHidService(private val context: Context) {
     private var config: AutomationConfig? = null
 
     private val _isConnected = MutableStateFlow(false)
-    /** True when a PC is actively connected via Bluetooth HID. */
     val isConnected = _isConnected.asStateFlow()
     private val _deviceName = MutableStateFlow<String?>(null)
-    /** Name of the connected PC (e.g. "DESKTOP-X"). */
     val connectedDeviceName = _deviceName.asStateFlow()
     private val _isAutoRunning = MutableStateFlow(false)
-    /** True when the randomized automation clicker is active. */
     val isAutomationRunning = _isAutoRunning.asStateFlow()
 
-    /** Updates the parameters used for randomized timing in automation mode. */
-    fun setConfig(c: AutomationConfig?) { config = c }
+    // Recording & Playback
+    private val _isRecording = MutableStateFlow(false)
+    val isRecording = _isRecording.asStateFlow()
+    private val _isPlaying = MutableStateFlow(false)
+    val isPlaying = _isPlaying.asStateFlow()
+    
+    private var currentRecording = mutableListOf<Pair<Long, ByteArray>>()
+    private var recordStartTime: Long = 0
+    /** Total duration of the most recently finished recording in ms. */
+    var lastRecordingDuration: Long = 0
+        private set
+    /** Total number of clicks in the most recently finished recording. */
+    var lastRecordingClicks: Int = 0
+        private set
+    private var onRecordingFinished: ((String) -> Unit)? = null
 
-    /** Standard HID Mouse Descriptor defining the data packet format (Buttons, X, Y, Wheel). */
+    fun setConfig(c: AutomationConfig?) { config = c }
+    fun setOnRecordingFinishedListener(l: (String) -> Unit) { onRecordingFinished = l }
+
     private val descriptor = byteArrayOf(
-        0x05, 0x01, // USAGE_PAGE (Generic Desktop)
-        0x09, 0x02, // USAGE (Mouse)
-        0xA1.toByte(), 0x01, // COLLECTION (Application)
-        0x09, 0x01, //   USAGE (Pointer)
-        0xA1.toByte(), 0x00, //   COLLECTION (Physical)
-        0x05, 0x09, //     USAGE_PAGE (Button)
-        0x19, 0x01, //     USAGE_MINIMUM (Button 1)
-        0x29, 0x03, //     USAGE_MAXIMUM (Button 3)
-        0x15, 0x00, //     LOGICAL_MINIMUM (0)
-        0x25, 0x01, //     LOGICAL_MAXIMUM (1)
-        0x75, 0x01, //     REPORT_SIZE (1)
-        0x95.toByte(), 0x03, //     REPORT_COUNT (3)
-        0x81.toByte(), 0x02, //     INPUT (Data,Var,Abs)
-        0x75, 0x05, //     REPORT_SIZE (5)
-        0x95.toByte(), 0x01, //     REPORT_COUNT (1)
-        0x81.toByte(), 0x03, //     INPUT (Const,Var,Abs)
-        0x05, 0x01, //     USAGE_PAGE (Generic Desktop)
-        0x09, 0x30, //     USAGE (X)
-        0x09, 0x31, //     USAGE (Y)
-        0x15, 0x81.toByte(), //     LOGICAL_MINIMUM (-127)
-        0x25, 0x7F, //     LOGICAL_MAXIMUM (127)
-        0x75, 0x08, //     REPORT_SIZE (8)
-        0x95.toByte(), 0x02, //     REPORT_COUNT (2)
-        0x81.toByte(), 0x06, //     INPUT (Data,Var,Rel)
-        0x09, 0x38, //     USAGE (Wheel)
-        0x15, 0x81.toByte(), //     LOGICAL_MINIMUM (-127)
-        0x25, 0x7F, //     LOGICAL_MAXIMUM (127)
-        0x75, 0x08, //     REPORT_SIZE (8)
-        0x95.toByte(), 0x01, //     REPORT_COUNT (1)
-        0x81.toByte(), 0x06, //     INPUT (Data,Var,Rel)
-        0xC0.toByte(), //   END_COLLECTION
-        0xC0.toByte(), // END_COLLECTION
+        0x05, 0x01, 0x09, 0x02, 0xA1.toByte(), 0x01, 0x09, 0x01, 0xA1.toByte(), 0x00,
+        0x05, 0x09, 0x19, 0x01, 0x29, 0x03, 0x15, 0x00, 0x25, 0x01, 0x75, 0x01, 0x95.toByte(), 0x03, 0x81.toByte(), 0x02,
+        0x75, 0x05, 0x95.toByte(), 0x01, 0x81.toByte(), 0x03, 0x05, 0x01, 0x09, 0x30, 0x09, 0x31, 0x15, 0x81.toByte(), 0x25, 0x7F,
+        0x75, 0x08, 0x95.toByte(), 0x02, 0x81.toByte(), 0x06, 0x09, 0x38, 0x15, 0x81.toByte(), 0x25, 0x7F, 0x75, 0x08, 0x95.toByte(), 0x01, 0x81.toByte(), 0x06,
+        0xC0.toByte(), 0xC0.toByte(),
     )
 
-    /** Bluetooth system callback to track HID profile status and connection events. */
     private val callback = object : BluetoothHidDevice.Callback() {
         override fun onAppStatusChanged(d: BluetoothDevice?, r: Boolean) { isRegistered = r; if (r) connectPaired() }
         @SuppressLint("MissingPermission")
@@ -78,13 +62,12 @@ class MouseHidService(private val context: Context) {
                 _deviceName.value = try { d.name } catch (_: SecurityException) { null } ?: "PC"
                 _isConnected.value = true 
             }
-            else if (s == BluetoothProfile.STATE_DISCONNECTED) { host = null; _deviceName.value = null; stopAuto(); _isConnected.value = false }
+            else if (s == BluetoothProfile.STATE_DISCONNECTED) { host = null; _deviceName.value = null; stopAuto(); stopPlayback(); _isConnected.value = false }
         }
         @SuppressLint("MissingPermission")
         override fun onGetReport(d: BluetoothDevice?, t: Byte, i: Byte, b: Int) { if (t == BluetoothHidDevice.REPORT_TYPE_INPUT) hid?.replyReport(d, t, i, byteArrayOf(0,0,0,0)) }
     }
 
-    /** Requests the Android Bluetooth HID Device profile proxy. */
     @SuppressLint("MissingPermission")
     @Suppress("DEPRECATION")
     fun registerProfile() {
@@ -98,12 +81,10 @@ class MouseHidService(private val context: Context) {
         }, BluetoothProfile.HID_DEVICE)
     }
 
-    /** Proactively attempts to reconnect to devices already bonded with the phone. */
     @SuppressLint("MissingPermission")
     @Suppress("DEPRECATION")
     private fun connectPaired() { BluetoothAdapter.getDefaultAdapter()?.bondedDevices?.forEach { hid?.connect(it) } }
 
-    /** Shuts down the HID profile and releases Bluetooth system resources. */
     @SuppressLint("MissingPermission")
     @Suppress("DEPRECATION")
     fun unregisterProfile() {
@@ -114,57 +95,105 @@ class MouseHidService(private val context: Context) {
         }
     }
 
-    /** Toggles the automated click state. */
     fun toggleAutomation() { if (_isAutoRunning.value) stopAuto() else startAuto() }
 
-    /** Sets the physical state (down/up) of a mouse button and sends the HID report. */
+    fun toggleRecording() {
+        if (_isRecording.value) {
+            _isRecording.value = false
+            lastRecordingDuration = SystemClock.elapsedRealtime() - recordStartTime
+            lastRecordingClicks = currentRecording.count { it.second[0].toInt() != 0 }
+            val data = currentRecording.joinToString(";") { "${it.first}:${it.second.joinToString(",")}" }
+            onRecordingFinished?.invoke(data)
+        } else {
+            stopAuto()
+            stopPlayback()
+            currentRecording.clear()
+            lastRecordingClicks = 0
+            lastRecordingDuration = 0
+            recordStartTime = SystemClock.elapsedRealtime()
+            _isRecording.value = true
+        }
+    }
+
+    fun togglePlayback(data: String?) {
+        if (_isPlaying.value) stopPlayback() else startPlayback(data)
+    }
+
+    private fun startPlayback(data: String?) {
+        if (data.isNullOrEmpty() || host == null) return
+        val events = data.split(";").mapNotNull {
+            try {
+                val parts = it.split(":")
+                val delay = parts[0].toLong()
+                val report = parts[1].split(",").map { b -> b.toByte() }.toByteArray()
+                delay to report
+            } catch (_: Exception) { null }
+        }
+        if (events.isEmpty()) return
+        _isPlaying.value = true
+        stopAuto()
+        
+        val playbackStartTime = SystemClock.elapsedRealtime()
+        events.forEach { event ->
+            handler.postDelayed({
+                if (_isPlaying.value) sendReportInternal(event.second)
+            }, event.first)
+        }
+        handler.postDelayed({ _isPlaying.value = false }, events.last().first + 100)
+    }
+
+    private fun stopPlayback() {
+        _isPlaying.value = false
+        handler.removeCallbacksAndMessages(null) // Careful with this
+    }
+
     @SuppressLint("MissingPermission")
     fun setButtonState(mask: Byte, pressed: Boolean) {
-        val h = host ?: return
         btnState = if (pressed) (btnState.toInt() or mask.toInt()).toByte() else (btnState.toInt() and mask.toInt().inv()).toByte()
-        try { hid?.sendReport(h, 0, byteArrayOf(btnState, 0, 0, 0)) } catch (_: Exception) {}
+        sendReportInternal(byteArrayOf(btnState, 0, 0, 0))
     }
 
-    /** Sends a delta movement report, preserving current button hold states. */
     @SuppressLint("MissingPermission")
     fun sendManualMove(dx: Int, dy: Int) {
-        val h = host ?: return
-        try { hid?.sendReport(h, 0, byteArrayOf(btnState, dx.coerceIn(-127, 127).toByte(), dy.coerceIn(-127, 127).toByte(), 0)) } catch (_: Exception) {}
+        sendReportInternal(byteArrayOf(btnState, dx.coerceIn(-127, 127).toByte(), dy.coerceIn(-127, 127).toByte(), 0))
     }
 
-    /** Sends a vertical scroll delta report. */
     @SuppressLint("MissingPermission")
     fun sendManualScroll(delta: Int) {
+        sendReportInternal(byteArrayOf(btnState, 0, 0, delta.toByte()))
+        handler.postDelayed({ sendReportInternal(byteArrayOf(btnState, 0, 0, 0)) }, 50)
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun sendReportInternal(report: ByteArray) {
         val h = host ?: return
         try {
-            hid?.sendReport(h, 0, byteArrayOf(btnState, 0, 0, delta.toByte()))
-            handler.postDelayed({ try { hid?.sendReport(h, 0, byteArrayOf(btnState, 0, 0, 0)) } catch (_: Exception) {} }, 50)
+            hid?.sendReport(h, 0, report)
+            if (_isRecording.value) {
+                currentRecording.add((SystemClock.elapsedRealtime() - recordStartTime) to report)
+            }
         } catch (_: Exception) {}
     }
 
-    /** Generates a Box-Muller Gaussian random integer clipped to a minimum of 10ms. */
     private fun gaussian(m: Float, s: Float): Int {
         var u1: Float; do { u1 = random.nextFloat() } while (u1 == 0f)
         return (m + sqrt(-2.0 * ln(u1.toDouble())).toFloat() * cos(2.0 * Math.PI * random.nextFloat()).toFloat() * s).toInt().coerceAtLeast(10)
     }
 
-    /** Continuous loop for executing randomized automated clicks. */
     private val autoRunnable = object : Runnable {
         @SuppressLint("MissingPermission")
         override fun run() {
             if (!_isAutoRunning.value || host == null || hid == null) return
-            setButtonState(mask = 0x01, pressed = true)
-            val hold = config?.let { random.nextInt(it.maxPressDuration - it.minPressDuration + 1) + it.minPressDuration } ?: gaussian(m = 95f, s = 17f)
+            setButtonState(0x01, true)
+            val hold = config?.let { random.nextInt(it.maxPressDuration - it.minPressDuration + 1) + it.minPressDuration } ?: gaussian(95f, 17f)
             handler.postDelayed({
-                setButtonState(mask = 0x01, pressed = false)
-                val gap = config?.let { if (random.nextInt(it.delayFrequency) == 0) (random.nextInt(it.maxBreakDelay - it.minBreakDelay + 1) + it.minBreakDelay) else (random.nextInt(it.maxInterval - it.minInterval + 1) + it.minInterval) } ?: (if (random.nextInt(500) == 0) random.nextInt(117001) + 3000 else gaussian(m = 153f, s = 48f))
+                setButtonState(0x01, false)
+                val gap = config?.let { if (random.nextInt(it.delayFrequency) == 0) (random.nextInt(it.maxBreakDelay - it.minBreakDelay + 1) + it.minBreakDelay) else (random.nextInt(it.maxInterval - it.minInterval + 1) + it.minInterval) } ?: (if (random.nextInt(500) == 0) random.nextInt(117001) + 3000 else gaussian(153f, 48f))
                 if (_isAutoRunning.value) handler.postDelayed(this, gap.toLong())
             }, hold.toLong())
         }
     }
 
-    /** Activates the automation click sequence. */
     private fun startAuto() { if (host != null) { _isAutoRunning.value = true; handler.post(autoRunnable) } }
-    /** Halts the automation click sequence. */
     private fun stopAuto() { _isAutoRunning.value = false; handler.removeCallbacks(autoRunnable) }
 }

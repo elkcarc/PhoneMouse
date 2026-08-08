@@ -21,35 +21,68 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 /** Main entry point. Handles UI setup and renders state from the ViewModel. */
+import androidx.activity.OnBackPressedCallback
+import androidx.drawerlayout.widget.DrawerLayout
+
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private val viewModel: MainViewModel by viewModels()
     private val perms by lazy { BluetoothPermissionManager(this) }
-    private lateinit var adapter: ConfigsAdapter
+    private lateinit var configAdapter: ConfigsAdapter
+    private lateinit var recordingAdapter: RecordingsAdapter
 
-    /** Initializes UI, starts state observation, and checks for system permissions. */
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
         setupUI()
+        setupBackNavigation()
         lifecycleScope.launch { repeatOnLifecycle(Lifecycle.State.STARTED) { viewModel.uiState.collectLatest { render(it) } } }
-        if (perms.hasPermissions()) {
-            // Profile registration is handled by the service on creation
-        } else {
-            perms.requestPermissions()
-        }
         if (!perms.isBluetoothEnabled()) perms.requestBluetoothEnable()
         setupInsets()
+    }
+
+    private fun setupBackNavigation() {
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                val s = viewModel.uiState.value
+                when {
+                    binding.drawerLayout.isDrawerOpen(GravityCompat.START) -> {
+                        if (s.isSettingsVisible || s.activePanel != "Main") {
+                            viewModel.setSettingsVisible(false)
+                            viewModel.setActivePanel("Main")
+                        } else {
+                            binding.drawerLayout.closeDrawer(GravityCompat.START)
+                        }
+                    }
+                    else -> {
+                        isEnabled = false
+                        onBackPressedDispatcher.onBackPressed()
+                    }
+                }
+            }
+        })
     }
 
     /** Sets up top-level click listeners and initializes child UI components. */
     private fun setupUI() {
         binding.toolbar.setNavigationOnClickListener { binding.drawerLayout.openDrawer(GravityCompat.START) }
         binding.statusBtn.setOnClickListener { startActivity(Intent(Settings.ACTION_BLUETOOTH_SETTINGS)) }
-        binding.toggleBtn.setOnClickListener { viewModel.toggleAutomation() }
+        
+        binding.autoclickerBtn.setOnClickListener { viewModel.toggleAutoclicker() }
+        binding.recordBtn.setOnClickListener { viewModel.toggleRecording() }
+        binding.playbackBtn.setOnClickListener { viewModel.togglePlayback() }
+
         binding.trackpad.setOnMoveListener { dx, dy -> viewModel.mouseHidService.value?.sendManualMove(dx, dy) }
+
+        binding.drawerLayout.addDrawerListener(object : DrawerLayout.SimpleDrawerListener() {
+            override fun onDrawerClosed(drawerView: View) {
+                viewModel.setSettingsVisible(false)
+                viewModel.setActivePanel("Main")
+            }
+        })
+        
         setupMouseButtons()
         setupList()
         setupDrawer()
@@ -83,32 +116,75 @@ class MainActivity : AppCompatActivity() {
         listOf(binding.leftClickBtn, binding.rightClickBtn, binding.middleClickBtn, binding.scrollUpBtn, binding.scrollDownBtn).forEach { it.setOnTouchListener(listener) }
     }
 
-    /** Initializes the automation configurations list with drag-and-drop support. */
+    /** Initializes the automation configurations and recordings lists. */
     private fun setupList() {
-        val helper = ItemTouchHelper(object : ItemTouchHelper.SimpleCallback(ItemTouchHelper.UP or ItemTouchHelper.DOWN, 0) {
+        val configTouchHelper = ItemTouchHelper(object : ItemTouchHelper.SimpleCallback(ItemTouchHelper.UP or ItemTouchHelper.DOWN, 0) {
             override fun onMove(r: RecyclerView, v: RecyclerView.ViewHolder, t: RecyclerView.ViewHolder): Boolean {
                 viewModel.moveConfig(v.adapterPosition, t.adapterPosition)
                 return true
             }
             override fun onSwiped(v: RecyclerView.ViewHolder, d: Int) {}
         })
-        helper.attachToRecyclerView(binding.navDrawerMain.configsRecyclerView)
-        adapter = ConfigsAdapter(
-            list = emptyList(),
+        configTouchHelper.attachToRecyclerView(binding.navDrawerMain.configsRecyclerView)
+        
+        configAdapter = ConfigsAdapter(
+            list = emptyList<String>(),
             selectedIndex = 0,
             onSelected = { viewModel.selectConfig(it) },
             onDeleted = { viewModel.deleteConfig(it) },
-            onDrag = { helper.startDrag(it) }
+            onDrag = { configTouchHelper.startDrag(it) }
         )
         binding.navDrawerMain.configsRecyclerView.apply {
             layoutManager = LinearLayoutManager(this@MainActivity)
-            adapter = this@MainActivity.adapter
+            adapter = configAdapter
         }
+
+        val recordingTouchHelper = ItemTouchHelper(object : ItemTouchHelper.SimpleCallback(ItemTouchHelper.UP or ItemTouchHelper.DOWN, 0) {
+            override fun onMove(r: RecyclerView, v: RecyclerView.ViewHolder, t: RecyclerView.ViewHolder): Boolean {
+                viewModel.moveRecording(v.adapterPosition, t.adapterPosition)
+                return true
+            }
+            override fun onSwiped(v: RecyclerView.ViewHolder, d: Int) {}
+        })
+        recordingTouchHelper.attachToRecyclerView(binding.navDrawerMain.recordingsRecyclerView)
+
+        recordingAdapter = RecordingsAdapter(
+            list = emptyList<InputRecording>(),
+            selectedIndex = 0,
+            onSelected = { viewModel.selectRecording(it) },
+            onRename = { showRenameDialog(it) },
+            onDeleted = { viewModel.deleteRecording(it) },
+            onDrag = { recordingTouchHelper.startDrag(it) }
+        )
+        binding.navDrawerMain.recordingsRecyclerView.apply {
+            layoutManager = LinearLayoutManager(this@MainActivity)
+            adapter = recordingAdapter
+        }
+    }
+
+    /** Shows a dialog to rename a specific recording. */
+    private fun showRenameDialog(index: Int) {
+        val recording = viewModel.uiState.value.recordings.getOrNull(index) ?: return
+        val input = android.widget.EditText(this).apply { setText(recording.name) }
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle(R.string.rename_recording)
+            .setView(input)
+            .setPositiveButton(R.string.save) { _, _ ->
+                viewModel.renameRecording(index, input.text.toString())
+            }
+            .setNegativeButton(R.string.cancel, null)
+            .show()
     }
 
     /** Handles navigation between the main variations drawer and settings drawer. */
     private fun setupDrawer() {
-        binding.navDrawerMain.settingsBtn.setOnClickListener { viewModel.setSettingsVisible(true) }
+        binding.navDrawerMain.apply {
+            profilesBtn.setOnClickListener { viewModel.setActivePanel("Profiles") }
+            recordingsBtn.setOnClickListener { viewModel.setActivePanel("Recordings") }
+            profilesBackBtn.setOnClickListener { viewModel.setActivePanel("Main") }
+            recordingsBackBtn.setOnClickListener { viewModel.setActivePanel("Main") }
+            settingsBtn.setOnClickListener { viewModel.setSettingsVisible(true) }
+        }
         binding.navDrawerSettings.settingsBackBtn.setOnClickListener { viewModel.setSettingsVisible(false) }
     }
 
@@ -127,10 +203,21 @@ class MainActivity : AppCompatActivity() {
             addVariationBtn.setOnClickListener { addVariationBtn.isVisible = false; addConfigCard.isVisible = true }
             cancelAddBtn.setOnClickListener { resetAdd() }
             confirmAddBtn.setOnClickListener {
-                viewModel.addConfig(AutomationConfig(minIntInput.text.toString().toIntOrNull() ?: getString(R.string.default_min_int).toInt(), maxIntInput.text.toString().toIntOrNull() ?: getString(R.string.default_max_int).toInt(), minPressInput.text.toString().toIntOrNull() ?: getString(R.string.default_min_press).toInt(), maxPressInput.text.toString().toIntOrNull() ?: getString(R.string.default_max_press).toInt(), minBreakInput.text.toString().toIntOrNull() ?: getString(R.string.default_min_break).toInt(), maxBreakInput.text.toString().toIntOrNull() ?: getString(R.string.default_max_break).toInt(), delayFreqInput.text.toString().toIntOrNull() ?: getString(R.string.default_freq).toInt()))
+                viewModel.addConfig(AutomationConfig(minIntInput.text.toString().toIntOrNull() ?: getString(R.string.default_min_int).toInt(), maxIntInput.text.toString().toIntOrNull() ?: getString(R.string.default_max_int).toInt(), minPressInput.text.toString().toIntOrNull() ?: getString(R.string.default_min_press).toInt(), maxPressInput.text.toString().toIntOrNull() ?: getString(R.string.default_min_press).toInt(), minBreakInput.text.toString().toIntOrNull() ?: getString(R.string.default_min_break).toInt(), maxBreakInput.text.toString().toIntOrNull() ?: getString(R.string.default_max_break).toInt(), delayFreqInput.text.toString().toIntOrNull() ?: getString(R.string.default_freq).toInt()))
                 resetAdd()
             }
         }
+    }
+
+    /** Helper to initialize a dropdown menu with correctly localized items. */
+    private fun setupSpinner(v: android.widget.AutoCompleteTextView, items: Array<String>, idx: Int) {
+        v.setAdapter(object : ArrayAdapter<String>(this, android.R.layout.simple_spinner_dropdown_item, items) {
+            override fun getFilter() = object : android.widget.Filter() {
+                override fun performFiltering(c: CharSequence?) = FilterResults().apply { values = items; count = items.size }
+                override fun publishResults(c: CharSequence?, r: FilterResults?) { notifyDataSetChanged() }
+            }
+        })
+        v.setText(items[idx.coerceAtLeast(0)], false)
     }
 
     /** Clears the "Add Variation" form fields and resets visibility. */
@@ -149,14 +236,36 @@ class MainActivity : AppCompatActivity() {
             binding.drawerLayout.openDrawer(GravityCompat.START, false)
         }
 
+        // Drawer Panels
+        binding.navDrawerMain.apply {
+            mainNavPanel.isVisible = s.activePanel == "Main"
+            profilesPanel.isVisible = s.activePanel == "Profiles"
+            recordingsPanel.isVisible = s.activePanel == "Recordings"
+        }
+
         binding.statusBtn.apply {
             backgroundTintList = ColorStateList.valueOf(if (s.isConnected) Color.GREEN else Color.GRAY)
             text = if (s.isConnected && (s.connectedDeviceName != null)) getString(R.string.connected_to, s.connectedDeviceName) else getString(s.statusTextRes)
         }
-        binding.toggleBtn.apply {
-            isEnabled = s.isConnected
-            text = getString(if (s.isAutomationRunning) R.string.stop_automation else R.string.start_automation)
+        
+        binding.autoclickerBtn.apply {
+            isEnabled = s.isConnected && !s.isRecording && !s.isPlaying
+            text = getString(if (s.isAutoclickerRunning) R.string.stop_autoclicker else R.string.start_autoclicker)
+            backgroundTintList = ColorStateList.valueOf(if (s.isAutoclickerRunning) Color.RED else Color.LTGRAY)
         }
+        
+        binding.recordBtn.apply {
+            isEnabled = s.isConnected && !s.isAutoclickerRunning && !s.isPlaying
+            text = getString(if (s.isRecording) R.string.stop_recording else R.string.record_input)
+            backgroundTintList = ColorStateList.valueOf(if (s.isRecording) Color.RED else Color.LTGRAY)
+        }
+        
+        binding.playbackBtn.apply {
+            isEnabled = s.isConnected && s.hasRecording && !s.isAutoclickerRunning && !s.isRecording
+            text = getString(if (s.isPlaying) R.string.stop_playback else R.string.playback)
+            backgroundTintList = ColorStateList.valueOf(if (s.isPlaying) Color.RED else Color.LTGRAY)
+        }
+
         binding.trackpad.apply {
             mode = s.trackpadMode
             trackpadSensitivity = s.trackpadSensitivity
@@ -190,22 +299,16 @@ class MainActivity : AppCompatActivity() {
 
             settingsTitleText.text = getString(R.string.settings); settingsBackBtn.text = getString(R.string.back)
         }
-        binding.navDrawerMain.apply { automationVariationsTitle.text = getString(R.string.automation_variations); addVariationBtn.text = getString(R.string.add_new_variation); settingsBtn.text = getString(R.string.settings) }
+        binding.navDrawerMain.apply { 
+            profilesBtn.text = getString(R.string.autoclicker_profiles)
+            recordingsBtn.text = getString(R.string.input_recordings)
+            settingsBtn.text = getString(R.string.settings)
+        }
 
-        adapter.update(s.configs, s.selectedConfigIndex)
+        configAdapter.update(s.configs, s.selectedConfigIndex)
+        recordingAdapter.update(s.recordings, s.selectedRecordingIndex)
 
         applyTheme(s.themeMode); applyLanguage(s.appLanguage)
-    }
-
-    /** Helper to initialize a dropdown menu with correctly localized items. */
-    private fun setupSpinner(v: android.widget.AutoCompleteTextView, items: Array<String>, idx: Int) {
-        v.setAdapter(object : ArrayAdapter<String>(this, android.R.layout.simple_spinner_dropdown_item, items) {
-            override fun getFilter() = object : android.widget.Filter() {
-                override fun performFiltering(c: CharSequence?) = FilterResults().apply { values = items; count = items.size }
-                override fun publishResults(c: CharSequence?, r: FilterResults?) { notifyDataSetChanged() }
-            }
-        })
-        v.setText(items[idx.coerceAtLeast(0)], false)
     }
 
     /** Synchronizes the app's light/dark mode with user preference. */
@@ -226,8 +329,16 @@ class MainActivity : AppCompatActivity() {
             val sys = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             val d = resources.displayMetrics.density; val p24 = (24 * d).toInt()
             binding.toolbar.updatePadding(top = sys.top); binding.bottomControls.updatePadding(bottom = sys.bottom)
-            listOf(binding.navDrawerMain.mainDrawerPanel, binding.navDrawerSettings.settingsDrawerPanel).forEach { it.updatePadding(top = sys.top) }
-            binding.navDrawerMain.bottomButtonsContainer.updatePadding(bottom = p24 + sys.bottom); binding.navDrawerSettings.settingsDrawerPanel.updatePadding(bottom = p24 + sys.bottom)
+            
+            // Drawer Panels Insets
+            binding.navDrawerMain.mainDrawerPanel.updatePadding(top = sys.top)
+            binding.navDrawerMain.mainNavPanel.updatePadding(bottom = sys.bottom + p24)
+            binding.navDrawerMain.profilesPanel.updatePadding(bottom = sys.bottom + p24)
+            binding.navDrawerMain.recordingsPanel.updatePadding(bottom = sys.bottom + p24)
+            
+            // Drawer Settings Insets
+            binding.navDrawerSettings.settingsDrawerPanel.updatePadding(top = sys.top, bottom = sys.bottom + p24)
+            
             insets
         }
     }

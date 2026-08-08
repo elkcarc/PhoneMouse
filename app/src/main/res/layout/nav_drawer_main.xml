@@ -4,44 +4,111 @@
     android:id="@+id/mainDrawerPanel"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:clickable="true"
+    android:focusable="true"
     android:orientation="vertical">
 
-    <TextView
-        android:id="@+id/automationVariationsTitle"
+    <LinearLayout
+        android:id="@+id/mainNavPanel"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:padding="16dp"
-        android:text="@string/automation_variations"
-        android:textColor="?android:attr/textColorPrimary"
-        android:textSize="20sp" />
+        android:layout_height="match_parent"
+        android:clickable="true"
+        android:focusable="true"
+        android:orientation="vertical">
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/configsRecyclerView"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:clipToPadding="false"
-        android:paddingVertical="8dp" />
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="24dp"
+            android:text="@string/app_name"
+            android:textColor="?android:attr/textColorPrimary"
+            android:textSize="24sp"
+            android:textStyle="bold" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/profilesBtn"
+            style="@style/Widget.MaterialComponents.Button.TextButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="start|center_vertical"
+            android:padding="16dp"
+            android:text="@string/autoclicker_profiles"
+            app:icon="@drawable/ic_mouse" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/recordingsBtn"
+            style="@style/Widget.MaterialComponents.Button.TextButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="start|center_vertical"
+            android:padding="16dp"
+            android:text="@string/input_recordings"
+            app:icon="@drawable/ic_camera" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/settingsBtn"
+            style="@style/Widget.MaterialComponents.Button.TextButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:gravity="start|center_vertical"
+            android:padding="16dp"
+            android:text="@string/settings"
+            app:icon="@drawable/ic_settings" />
+    </LinearLayout>
 
     <LinearLayout
-        android:id="@+id/bottomButtonsContainer"
+        android:id="@+id/profilesPanel"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="match_parent"
+        android:clickable="true"
+        android:focusable="true"
         android:orientation="vertical"
-        android:padding="16dp">
+        android:visibility="gone">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/profilesBackBtn"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="24dp"
+            android:text="@string/back" />
+
+        <TextView
+            android:id="@+id/automationVariationsTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingHorizontal="16dp"
+            android:paddingBottom="16dp"
+            android:text="@string/automation_variations"
+            android:textColor="?android:attr/textColorPrimary"
+            android:textSize="20sp" />
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/configsRecyclerView"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:paddingVertical="8dp" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/addVariationBtn"
             style="@style/Widget.MaterialComponents.Button.OutlinedButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_margin="16dp"
             android:text="@string/add_new_variation" />
 
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/addConfigCard"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
+            android:layout_margin="16dp"
             android:visibility="gone"
             app:cardCornerRadius="16dp"
             app:cardElevation="8dp">
@@ -56,8 +123,7 @@
                     android:id="@+id/minIntLayout"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="@string/min_interval"
-                    app:helperText="@string/min_interval_help">
+                    android:hint="@string/min_interval">
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/minIntInput"
                         android:layout_width="match_parent"
@@ -71,8 +137,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
-                    android:hint="@string/max_interval"
-                    app:helperText="@string/max_interval_help">
+                    android:hint="@string/max_interval">
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/maxIntInput"
                         android:layout_width="match_parent"
@@ -85,9 +150,7 @@
                     android:id="@+id/minPressLayout"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:hint="@string/min_press_duration"
-                    app:helperText="@string/min_press_help">
+                    android:hint="@string/min_press_duration">
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/minPressInput"
                         android:layout_width="match_parent"
@@ -101,8 +164,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
-                    android:hint="@string/max_press_duration"
-                    app:helperText="@string/max_press_help">
+                    android:hint="@string/max_press_duration">
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/maxPressInput"
                         android:layout_width="match_parent"
@@ -116,8 +178,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
-                    android:hint="@string/min_break_delay"
-                    app:helperText="@string/min_break_help">
+                    android:hint="@string/min_break_delay">
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/minBreakInput"
                         android:layout_width="match_parent"
@@ -131,8 +192,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
-                    android:hint="@string/max_break_delay"
-                    app:helperText="@string/max_break_help">
+                    android:hint="@string/max_break_delay">
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/maxBreakInput"
                         android:layout_width="match_parent"
@@ -146,8 +206,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
-                    android:hint="@string/delay_frequency"
-                    app:helperText="@string/delay_freq_help">
+                    android:hint="@string/delay_frequency">
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/delayFreqInput"
                         android:layout_width="match_parent"
@@ -156,31 +215,61 @@
                         android:text="@string/default_freq" />
                 </com.google.android.material.textfield.TextInputLayout>
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/cancelAddBtn"
-                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="16dp"
-                    android:text="@string/cancel" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/confirmAddBtn"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="@string/add_configuration" />
+                    android:orientation="horizontal">
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/cancelAddBtn"
+                        style="@style/Widget.MaterialComponents.Button.TextButton"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/cancel" />
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/confirmAddBtn"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/save" />
+                </LinearLayout>
 
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/recordingsPanel"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:clickable="true"
+        android:focusable="true"
+        android:orientation="vertical"
+        android:visibility="gone">
 
         <com.google.android.material.button.MaterialButton
-            android:id="@+id/settingsBtn"
+            android:id="@+id/recordingsBackBtn"
             style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="24dp"
+            android:text="@string/back" />
+
+        <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:text="@string/settings" />
+            android:paddingHorizontal="16dp"
+            android:paddingBottom="16dp"
+            android:text="@string/input_recordings"
+            android:textColor="?android:attr/textColorPrimary"
+            android:textSize="20sp" />
 
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recordingsRecyclerView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:paddingVertical="8dp" />
     </LinearLayout>
 
 </LinearLayout>

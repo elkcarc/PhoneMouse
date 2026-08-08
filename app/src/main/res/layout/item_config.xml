@@ -10,8 +10,8 @@
 
     <ImageView
         android:id="@+id/dragHandle"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
         android:layout_marginEnd="16dp"
         android:src="@drawable/ic_drag_handle"
         app:tint="?android:attr/textColorPrimary" />
@@ -25,12 +25,15 @@
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/deleteBtn"
-        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+        style="@style/Widget.MaterialComponents.Button.TextButton"
         android:layout_width="48dp"
         android:layout_height="48dp"
         android:insetTop="0dp"
         android:insetBottom="0dp"
         android:padding="0dp"
-        android:text="X" />
+        app:icon="@drawable/ic_close"
+        app:iconGravity="textStart"
+        app:iconPadding="0dp"
+        app:iconTint="@android:color/holo_red_dark" />
 
 </LinearLayout>
