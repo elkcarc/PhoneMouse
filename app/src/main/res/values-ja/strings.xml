@@ -1,0 +1,33 @@
+<resources>
+    <string name="app_name">PhoneMouse</string>
+    <string name="disconnected_tap_to_open_bluetooth_settings">切断済み (タップしてBluetooth設定を開く)</string>
+    <string name="connected">接続済み</string>
+    <string name="start_automation">自動化を開始</string>
+    <string name="stop_automation">自動化を停止</string>
+    <string name="automation_variations">自動化バリエーション</string>
+    <string name="add_new_variation">新しいバリエーションを追加</string>
+    <string name="add_variation">バリエーションを追加</string>
+    <string name="add_configuration">設定を追加</string>
+    <string name="settings">設定</string>
+    <string name="back">← 戻る</string>
+    <string name="theme">テーマ</string>
+    <string name="language">言語</string>
+    <string name="cancel">キャンセル</string>
+    <string name="got_it">了解</string>
+    <string name="config_format">間隔: %1$s-%2$s ms\n押下時間: %3$s-%4$s ms\n休憩遅延: %5$s-%6$s ms\n頻度: 1/%7$s</string>
+    <string name="min_interval">最小間隔</string>
+    <string name="max_interval">最大間隔</string>
+    <string name="min_press_duration">最小押下時間</string>
+    <string name="max_press_duration">最大押下時間</string>
+    <string name="min_break_delay">最小休憩遅延</string>
+    <string name="max_break_delay">最大休憩遅延</string>
+    <string name="delay_frequency">遅延頻度</string>
+    <string name="min_interval_help">標準クリック間の最小ミリ秒。</string>
+    <string name="max_interval_help">標準クリック間の最大ミリ秒。</string>
+    <string name="min_press_help">最小ホールド時間 (ms)。</string>
+    <string name="max_press_help">最大ホールド時間 (ms)。</string>
+    <string name="min_break_help">長い一時停止の最小ミリ秒。</string>
+    <string name="max_break_help">長い一時停止の最大ミリ秒。</string>
+    <string name="delay_freq_help">長い一時停止の頻度 (X回に1回)。</string>
+    <string name="trackpad_trail">トラックパッドの軌跡</string>
+</resources>

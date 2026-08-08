@@ -1,0 +1,33 @@
+<resources>
+    <string name="app_name">PhoneMouse</string>
+    <string name="disconnected_tap_to_open_bluetooth_settings">Desconectado (Toca para abrir ajustes de Bluetooth)</string>
+    <string name="connected">Conectado</string>
+    <string name="start_automation">Iniciar automatización</string>
+    <string name="stop_automation">Detener automatización</string>
+    <string name="automation_variations">Variaciones de automatización</string>
+    <string name="add_new_variation">Añadir nueva variación</string>
+    <string name="add_variation">Añadir variación</string>
+    <string name="add_configuration">Añadir configuración</string>
+    <string name="settings">Ajustes</string>
+    <string name="back">← Atrás</string>
+    <string name="theme">Tema</string>
+    <string name="language">Idioma</string>
+    <string name="cancel">Cancelar</string>
+    <string name="got_it">Entendido</string>
+    <string name="config_format">Intervalo: %1$s-%2$s ms\nDuración presión: %3$s-%4$s ms\nRetraso descanso: %5$s-%6$s ms\nFrecuencia: 1 en %7$s</string>
+    <string name="min_interval">Intervalo mínimo</string>
+    <string name="max_interval">Intervalo máximo</string>
+    <string name="min_press_duration">Duración mínima presión</string>
+    <string name="max_press_duration">Duración máxima presión</string>
+    <string name="min_break_delay">Retraso descanso mínimo</string>
+    <string name="max_break_delay">Retraso descanso máximo</string>
+    <string name="delay_frequency">Frecuencia de retraso</string>
+    <string name="min_interval_help">Ms mín entre clics estándar.</string>
+    <string name="max_interval_help">Ms máx entre clics estándar.</string>
+    <string name="min_press_help">Tiempo mínimo sostenido (ms).</string>
+    <string name="max_press_help">Tiempo máximo sostenido (ms).</string>
+    <string name="min_break_help">Ms mín para pausas largas. </string>
+    <string name="max_break_help">Ms máx para pausas largas.</string>
+    <string name="delay_freq_help">Frecuencia (1 de X) de pausas largas.</string>
+    <string name="trackpad_trail">Estela del trackpad</string>
+</resources>

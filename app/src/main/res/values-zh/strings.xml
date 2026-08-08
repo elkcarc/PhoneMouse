@@ -1,0 +1,33 @@
+<resources>
+    <string name="app_name">PhoneMouse</string>
+    <string name="disconnected_tap_to_open_bluetooth_settings">已断开（点击打开蓝牙设置）</string>
+    <string name="connected">已连接</string>
+    <string name="start_automation">启动自动点击</string>
+    <string name="stop_automation">停止自动点击</string>
+    <string name="automation_variations">自动点击方案</string>
+    <string name="add_new_variation">添加新方案</string>
+    <string name="add_variation">添加方案</string>
+    <string name="add_configuration">保存配置</string>
+    <string name="settings">设置</string>
+    <string name="back">← 返回</string>
+    <string name="theme">主题</string>
+    <string name="language">语言</string>
+    <string name="cancel">取消</string>
+    <string name="got_it">知道了</string>
+    <string name="config_format">间隔: %1$s-%2$s 毫秒\n按住时长: %3$s-%4$s 毫秒\n间歇延迟: %5$s-%6$s 毫秒\n频率: 1/%7$s</string>
+    <string name="min_interval">最小间隔</string>
+    <string name="max_interval">最大间隔</string>
+    <string name="min_press_duration">最小按住时长</string>
+    <string name="max_press_duration">最大按住时长</string>
+    <string name="min_break_delay">最小间歇延迟</string>
+    <string name="max_break_delay">最大间歇延迟</string>
+    <string name="delay_frequency">延迟频率</string>
+    <string name="min_interval_help">标准点击之间的最小毫秒数。</string>
+    <string name="max_interval_help">标准点击之间的最大毫秒数。</string>
+    <string name="min_press_help">最小按住时间（毫秒）。</string>
+    <string name="max_press_help">最大按住时间（毫秒）。</string>
+    <string name="min_break_help">长暂停的最小毫秒数。</string>
+    <string name="max_break_help">长暂停的最大毫秒数。</string>
+    <string name="delay_freq_help">长暂停出现的频率（X次点击中出现1次）。</string>
+    <string name="trackpad_trail">触摸轨迹</string>
+</resources>

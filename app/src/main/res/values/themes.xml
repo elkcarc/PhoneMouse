@@ -1,0 +1,26 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Base application theme. -->
+    <style name="Theme.PhoneMouse" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <!-- Primary brand color. -->
+        <item name="colorPrimary">@android:color/black</item>
+        <item name="colorPrimaryVariant">#333333</item>
+        <item name="colorOnPrimary">@android:color/white</item>
+        <!-- Secondary brand color. -->
+        <item name="colorSecondary">#666666</item>
+        <item name="colorSecondaryVariant">#333333</item>
+        <item name="colorOnSecondary">@android:color/white</item>
+        <item name="android:colorControlHighlight">#20000000</item>
+        <item name="colorAccent">@android:color/black</item>
+        <!-- Status bar color. -->
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowBackground">@android:color/white</item>
+        <item name="android:textColorPrimary">@android:color/black</item>
+
+        <!-- Custom Attributes -->
+        <item name="trackpadBackgroundColor">#EEEEEE</item>
+        <item name="controlBackgroundColor">#CCCCCC</item>
+        <item name="controlIconColor">@android:color/black</item>
+        <item name="controlTextColor">@android:color/black</item>
+    </style>
+</resources>

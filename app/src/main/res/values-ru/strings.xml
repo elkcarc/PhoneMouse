@@ -1,0 +1,33 @@
+<resources>
+    <string name="app_name">PhoneMouse</string>
+    <string name="disconnected_tap_to_open_bluetooth_settings">Отключено (Нажмите, чтобы открыть настройки Bluetooth)</string>
+    <string name="connected">Подключено</string>
+    <string name="start_automation">Запустить автоматизацию</string>
+    <string name="stop_automation">Остановить автоматизацию</string>
+    <string name="automation_variations">Варианты автоматизации</string>
+    <string name="add_new_variation">Добавить новый вариант</string>
+    <string name="add_variation">Добавить вариант</string>
+    <string name="add_configuration">Добавить конфигурацию</string>
+    <string name="settings">Настройки</string>
+    <string name="back">← Назад</string>
+    <string name="theme">Тема</string>
+    <string name="language">Язык</string>
+    <string name="cancel">Отмена</string>
+    <string name="got_it">Понятно</string>
+    <string name="config_format">Интервал: %1$s-%2$s мс\nДлительность нажатия: %3$s-%4$s мс\nЗадержка перерыва: %5$s-%6$s мс\nЧастота: 1 из %7$s</string>
+    <string name="min_interval">Мин. интервал</string>
+    <string name="max_interval">Макс. интервал</string>
+    <string name="min_press_duration">Мин. длит. нажатия</string>
+    <string name="max_press_duration">Макс. длит. нажатия</string>
+    <string name="min_break_delay">Мин. задержка перерыва</string>
+    <string name="max_break_delay">Макс. задержка перерыва</string>
+    <string name="delay_frequency">Частота задержки</string>
+    <string name="min_interval_help">Мин. мс между стандартными кликами.</string>
+    <string name="max_interval_help">Макс. мс между стандартными кликами.</string>
+    <string name="min_press_help">Мин. время удержания (мс).</string>
+    <string name="max_press_help">Макс. время удержания (мс).</string>
+    <string name="min_break_help">Мин. мс для длинных пауз.</string>
+    <string name="max_break_help">Макс. мс для длинных пауз.</string>
+    <string name="delay_freq_help">Частота (1 из X) длинных пауз.</string>
+    <string name="trackpad_trail">След тачпада</string>
+</resources>

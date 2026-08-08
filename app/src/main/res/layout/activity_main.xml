@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.drawerlayout.widget.DrawerLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/drawerLayout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fitsSystemWindows="false">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@android:color/black"
+            app:navigationIcon="@drawable/ic_menu"
+            app:navigationIconTint="@android:color/white"
+            app:title="@string/app_name"
+            app:titleTextColor="@android:color/white" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/statusBtn"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="16dp"
+            android:gravity="center"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:minHeight="64dp"
+            android:text="@string/disconnected_tap_to_open_bluetooth_settings"
+            android:textSize="16sp"
+            app:backgroundTint="?attr/controlBackgroundColor"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/toggleBtn"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="16dp"
+            android:layout_marginBottom="16dp"
+            android:enabled="false"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:minHeight="64dp"
+            android:text="@string/start_automation"
+            android:textSize="18sp" />
+
+        <com.example.phonemouse.TrackpadView
+            android:id="@+id/trackpad"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_marginHorizontal="16dp"
+            android:layout_marginBottom="16dp"
+            android:layout_weight="1"
+            android:background="?attr/trackpadBackgroundColor">
+
+            <ImageView
+                android:layout_width="64dp"
+                android:layout_height="64dp"
+                android:layout_gravity="center"
+                android:alpha="0.5"
+                android:src="@drawable/ic_trackpad"
+                app:tint="@android:color/darker_gray" />
+        </com.example.phonemouse.TrackpadView>
+
+        <LinearLayout
+            android:id="@+id/bottomControls"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="12dp"
+            android:orientation="vertical"
+            android:paddingBottom="8dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/scrollUpBtn"
+                    style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="4dp"
+                    android:layout_weight="1"
+                    android:insetTop="0dp"
+                    android:insetBottom="0dp"
+                    android:minHeight="64dp"
+                    app:backgroundTint="?attr/controlBackgroundColor"
+                    app:icon="@drawable/ic_arrow_upward"
+                    app:iconGravity="textStart"
+                    app:iconPadding="0dp"
+                    app:iconTint="?attr/controlIconColor" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/middleClickBtn"
+                    style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="4dp"
+                    android:layout_weight="1"
+                    android:insetTop="0dp"
+                    android:insetBottom="0dp"
+                    android:minHeight="64dp"
+                    app:backgroundTint="?attr/controlBackgroundColor"
+                    app:icon="@drawable/ic_mouse_middle"
+                    app:iconGravity="textStart"
+                    app:iconPadding="0dp"
+                    app:iconTint="?attr/controlIconColor" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/scrollDownBtn"
+                    style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="4dp"
+                    android:layout_weight="1"
+                    android:insetTop="0dp"
+                    android:insetBottom="0dp"
+                    android:minHeight="64dp"
+                    app:backgroundTint="?attr/controlBackgroundColor"
+                    app:icon="@drawable/ic_arrow_downward"
+                    app:iconGravity="textStart"
+                    app:iconPadding="0dp"
+                    app:iconTint="?attr/controlIconColor" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/leftClickBtn"
+                    style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="4dp"
+                    android:layout_weight="1"
+                    android:insetTop="0dp"
+                    android:insetBottom="0dp"
+                    android:minHeight="64dp"
+                    app:backgroundTint="?attr/controlBackgroundColor"
+                    app:icon="@drawable/mouse_left_click"
+                    app:iconGravity="textStart"
+                    app:iconPadding="0dp"
+                    app:iconTint="?attr/controlIconColor" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/rightClickBtn"
+                    style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="4dp"
+                    android:layout_weight="1"
+                    android:insetTop="0dp"
+                    android:insetBottom="0dp"
+                    android:minHeight="64dp"
+                    app:backgroundTint="?attr/controlBackgroundColor"
+                    app:icon="@drawable/mouse_right_click"
+                    app:iconGravity="textStart"
+                    app:iconPadding="0dp"
+                    app:iconTint="?attr/controlIconColor" />
+            </LinearLayout>
+        </LinearLayout>
+    </LinearLayout>
+
+    <FrameLayout
+        android:id="@+id/navigationContainer"
+        android:layout_width="300dp"
+        android:layout_height="match_parent"
+        android:layout_gravity="start"
+        android:background="?android:attr/windowBackground"
+        android:clickable="true"
+        android:focusable="true">
+
+        <include
+            android:id="@+id/navDrawerMain"
+            layout="@layout/nav_drawer_main" />
+
+        <include
+            android:id="@+id/navDrawerSettings"
+            layout="@layout/nav_drawer_settings"
+            android:visibility="gone" />
+    </FrameLayout>
+
+</androidx.drawerlayout.widget.DrawerLayout>
