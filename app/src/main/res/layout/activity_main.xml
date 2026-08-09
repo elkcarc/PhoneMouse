@@ -99,7 +99,7 @@
                 app:iconTint="@null" />
         </LinearLayout>
 
-        <com.example.phonemouse.TrackpadView
+        <com.elk.phonemouse.TrackpadView
             android:id="@+id/trackpad"
             android:layout_width="match_parent"
             android:layout_height="0dp"
@@ -116,7 +116,7 @@
                 android:alpha="0.5"
                 android:src="@drawable/ic_trackpad"
                 app:tint="@android:color/darker_gray" />
-        </com.example.phonemouse.TrackpadView>
+        </com.elk.phonemouse.TrackpadView>
 
         <LinearLayout
             android:id="@+id/bottomControls"

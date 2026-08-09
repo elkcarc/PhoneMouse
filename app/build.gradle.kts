@@ -3,13 +3,13 @@ plugins {
 }
 
 android {
-    namespace = "com.example.phonemouse"
+    namespace = "com.elk.phonemouse"
     compileSdk {
         version = release(37)
     }
 
     defaultConfig {
-        applicationId = "com.example.phonemouse"
+        applicationId = "com.elk.phonemouse"
         minSdk = 28
         targetSdk = 37
         versionCode = 1

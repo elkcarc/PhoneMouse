@@ -13,3 +13,8 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# Local IDE state
+.idea/deploymentTargetSelector.xml
+.idea/planningMode.xml
+.idea/runConfigurations.xml
