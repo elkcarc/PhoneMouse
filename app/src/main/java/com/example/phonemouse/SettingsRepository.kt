@@ -39,6 +39,15 @@ class SettingsRepository(context: Context) {
     private val _trackpointCurve = MutableStateFlow(value = p.getString("trackpoint_curve", "Linear") ?: "Linear")
     val trackpointCurve = _trackpointCurve.asStateFlow()
 
+    private val _isTwoFingerScrollEnabled = MutableStateFlow(value = p.getBoolean("is_two_finger_scroll_enabled", true))
+    val isTwoFingerScrollEnabled = _isTwoFingerScrollEnabled.asStateFlow()
+
+    private val _isTapToClickEnabled = MutableStateFlow(value = p.getBoolean("is_tap_to_click_enabled", true))
+    val isTapToClickEnabled = _isTapToClickEnabled.asStateFlow()
+
+    private val _isDoubleTapToRightClickEnabled = MutableStateFlow(value = p.getBoolean("is_double_tap_to_right_click_enabled", true))
+    val isDoubleTapToRightClickEnabled = _isDoubleTapToRightClickEnabled.asStateFlow()
+
     fun saveConfirmDelete(enabled: Boolean) { _confirmDelete.value = enabled; p.edit(commit = true) { putBoolean("confirm_delete", enabled) } }
     fun saveTrailEnabled(e: Boolean) { _isTrailEnabled.value = e; p.edit(commit = true) { putBoolean("is_trail_enabled", e) } }
     fun saveTrackpadSensitivity(v: Float) { val c = v.coerceIn(0.1f, 8.0f); _trackpadSensitivity.value = c; p.edit(commit = true) { putFloat("trackpad_sensitivity", c) } }
@@ -49,4 +58,7 @@ class SettingsRepository(context: Context) {
     fun saveThemeMode(m: String) { _themeMode.value = m; p.edit(commit = true) { putString("theme_mode", m) } }
     fun saveTrackpadAcceleration(v: Float) { _trackpadAcceleration.value = v; p.edit(commit = true) { putFloat("trackpad_acceleration", v) } }
     fun saveTrackpointCurve(c: String) { _trackpointCurve.value = c; p.edit(commit = true) { putString("trackpoint_curve", c) } }
+    fun saveTwoFingerScrollEnabled(e: Boolean) { _isTwoFingerScrollEnabled.value = e; p.edit(commit = true) { putBoolean("is_two_finger_scroll_enabled", e) } }
+    fun saveTapToClickEnabled(e: Boolean) { _isTapToClickEnabled.value = e; p.edit(commit = true) { putBoolean("is_tap_to_click_enabled", e) } }
+    fun saveDoubleTapToRightClickEnabled(e: Boolean) { _isDoubleTapToRightClickEnabled.value = e; p.edit(commit = true) { putBoolean("is_double_tap_to_right_click_enabled", e) } }
 }

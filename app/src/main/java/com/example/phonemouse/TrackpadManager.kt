@@ -2,11 +2,16 @@ package com.example.phonemouse
 
 import android.view.Choreographer
 import android.view.MotionEvent
+import android.os.SystemClock
+import android.os.Handler
+import android.os.Looper
 import kotlin.math.*
 
 /** Logic provider for both Relative (Trackpad) and Absolute (Trackpoint) modes. */
 class TrackpadManager(
     private val onMove: (Int, Int) -> Unit,
+    private val onScroll: (Int) -> Unit,
+    private val onButtonClick: (Byte, Boolean) -> Unit,
     private val onUpdateAnimation: (Float, Float) -> Unit,
 ) : Choreographer.FrameCallback {
     var mode = "Trackpad"
@@ -14,6 +19,9 @@ class TrackpadManager(
     var trackpadSensitivity = 1.0f
     var trackpointSensitivity = 1.0f
     var isTrackpointAnimationEnabled = true
+    var isTwoFingerScrollEnabled = true
+    var isTapToClickEnabled = true
+    var isDoubleTapToRightClickEnabled = true
     
     /** Ballistics acceleration exponent (1.0 = linear/disabled). */
     var trackpadAcceleration = 1.0f
@@ -27,6 +35,19 @@ class TrackpadManager(
     private var viewWidth = 0
     private var viewHeight = 0
     private var pointerId = MotionEvent.INVALID_POINTER_ID
+    private var secondPointerId = MotionEvent.INVALID_POINTER_ID
+    
+    // Tap detection
+    private var lastTapTime = 0L
+    private var downX = 0f
+    private var downY = 0f
+    private val tapThreshold = 15f
+    private val tapTimeout = 200L
+    private val doubleTapTimeout = 300L
+
+    // Scroll accumulation
+    private var remScrollY = 0f
+    private var lastSecondY = 0f
     
     // Sub-pixel Accumulation
     private var remX = 0f
@@ -80,22 +101,30 @@ class TrackpadManager(
 
     fun onTouch(event: MotionEvent): Boolean {
         when (event.actionMasked) {
-            MotionEvent.ACTION_DOWN, MotionEvent.ACTION_POINTER_DOWN -> {
+            MotionEvent.ACTION_DOWN -> {
                 val idx = event.actionIndex
-                if (pointerId == MotionEvent.INVALID_POINTER_ID) {
-                    pointerId = event.getPointerId(idx)
-                    lx = event.getX(idx)
-                    ly = event.getY(idx)
-                    tx = lx
-                    ty = ly
-                    lastRawDx = 0f
-                    lastRawDy = 0f
-                    remX = 0f
-                    remY = 0f
-                    if (mode == "Trackpoint") {
-                        Choreographer.getInstance().removeFrameCallback(this)
-                        Choreographer.getInstance().postFrameCallback(this)
-                    }
+                pointerId = event.getPointerId(idx)
+                lx = event.getX(idx)
+                ly = event.getY(idx)
+                downX = lx
+                downY = ly
+                tx = lx
+                ty = ly
+                lastRawDx = 0f
+                lastRawDy = 0f
+                remX = 0f
+                remY = 0f
+                if (mode == "Trackpoint") {
+                    Choreographer.getInstance().removeFrameCallback(this)
+                    Choreographer.getInstance().postFrameCallback(this)
+                }
+                return true
+            }
+            MotionEvent.ACTION_POINTER_DOWN -> {
+                if (isTwoFingerScrollEnabled && mode == "Trackpad" && secondPointerId == MotionEvent.INVALID_POINTER_ID) {
+                    val idx = event.actionIndex
+                    secondPointerId = event.getPointerId(idx)
+                    lastSecondY = event.getY(idx)
                 }
                 return true
             }
@@ -105,6 +134,29 @@ class TrackpadManager(
                     if (idx != -1) {
                         val x = event.getX(idx)
                         val y = event.getY(idx)
+                        
+                        if (isTwoFingerScrollEnabled && secondPointerId != MotionEvent.INVALID_POINTER_ID && mode == "Trackpad") {
+                            val sIdx = event.findPointerIndex(secondPointerId)
+                            if (sIdx != -1) {
+                                val sy = event.getY(sIdx)
+                                val dy1 = y - ly
+                                val dy2 = sy - lastSecondY
+                                val avgDy = (dy1 + dy2) / 2f
+                                
+                                val scrollVal = (avgDy / 10f) + remScrollY
+                                val outScroll = scrollVal.toInt()
+                                if (outScroll != 0) {
+                                    onScroll(outScroll)
+                                }
+                                remScrollY = scrollVal - outScroll
+                                
+                                lastSecondY = sy
+                                lx = x
+                                ly = y
+                                return true
+                            }
+                        }
+
                         if (mode == "Trackpad") {
                             // 1. Raw movement
                             val rawDx = x - lx
@@ -145,9 +197,37 @@ class TrackpadManager(
                 }
                 return true
             }
-            MotionEvent.ACTION_UP, MotionEvent.ACTION_POINTER_UP, MotionEvent.ACTION_CANCEL -> {
+            MotionEvent.ACTION_POINTER_UP -> {
+                if (event.getPointerId(event.actionIndex) == secondPointerId) {
+                    secondPointerId = MotionEvent.INVALID_POINTER_ID
+                }
+                return true
+            }
+            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
                 if (event.getPointerId(event.actionIndex) == pointerId || event.action == MotionEvent.ACTION_CANCEL) {
+                    if (event.action == MotionEvent.ACTION_UP && mode == "Trackpad") {
+                        val x = event.getX(event.actionIndex)
+                        val y = event.getY(event.actionIndex)
+                        val dist = sqrt((x - downX).pow(2) + (y - downY).pow(2))
+                        val time = event.eventTime - event.downTime
+                        
+                        if (dist < tapThreshold && time < tapTimeout) {
+                            val now = SystemClock.elapsedRealtime()
+                            if (isDoubleTapToRightClickEnabled && now - lastTapTime < doubleTapTimeout) {
+                                // Double tap -> Right click
+                                onButtonClick(0x02.toByte(), true)
+                                Handler(Looper.getMainLooper()).postDelayed({ onButtonClick(0x02.toByte(), false) }, 50)
+                                lastTapTime = 0
+                            } else if (isTapToClickEnabled) {
+                                // Single tap -> Left click
+                                onButtonClick(0x01.toByte(), true)
+                                Handler(Looper.getMainLooper()).postDelayed({ onButtonClick(0x01.toByte(), false) }, 50)
+                                lastTapTime = now
+                            }
+                        }
+                    }
                     pointerId = MotionEvent.INVALID_POINTER_ID
+                    secondPointerId = MotionEvent.INVALID_POINTER_ID
                     stopLoop()
                 }
                 return true

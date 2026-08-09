@@ -53,6 +53,9 @@ class FunctionalIntegrationTest {
         every { settings.trackpointSensitivity } returns MutableStateFlow(1.0f)
         every { settings.trackpointCurve } returns MutableStateFlow("Linear")
         every { settings.isTrackpointAnimationEnabled } returns MutableStateFlow(true)
+        every { settings.isTwoFingerScrollEnabled } returns MutableStateFlow(true)
+        every { settings.isTapToClickEnabled } returns MutableStateFlow(true)
+        every { settings.isDoubleTapToRightClickEnabled } returns MutableStateFlow(true)
 
         viewModel = MainViewModel(app, repo, settings, hidManager)
     }

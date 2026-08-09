@@ -67,4 +67,8 @@
     <string name="theme_light">Светлая</string>
     <string name="permissions_required_tap_to_grant">Требуются разрешения (Нажмите, чтобы предоставить)</string>
     <string name="bluetooth_disabled_tap_to_enable">Bluetooth выключен (Нажмите, чтобы включить)</string>
+    <string name="gestures">Жесты</string>
+    <string name="two_finger_scroll">Прокрутка двумя пальцами</string>
+    <string name="tap_to_click">Нажатие для левого клика</string>
+    <string name="double_tap_to_right_click">Двойное нажатие для правого клика</string>
 </resources>

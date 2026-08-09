@@ -27,6 +27,8 @@ class TrackpadManagerTest {
                 lastDx = dx
                 lastDy = dy
             },
+            onScroll = { _ -> },
+            onButtonClick = { _, _ -> },
             onUpdateAnimation = { x, y ->
                 lastAnimX = x
                 lastAnimY = y

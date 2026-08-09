@@ -29,15 +29,28 @@ class TrackpadView @JvmOverloads constructor(context: Context, attrs: AttributeS
     var isTrackpointAnimationEnabled: Boolean
         get() = manager.isTrackpointAnimationEnabled
         set(v) { manager.isTrackpointAnimationEnabled = v; if (!v) resetIcon() }
+    var isTwoFingerScrollEnabled: Boolean
+        get() = manager.isTwoFingerScrollEnabled
+        set(v) { manager.isTwoFingerScrollEnabled = v }
+    var isTapToClickEnabled: Boolean
+        get() = manager.isTapToClickEnabled
+        set(v) { manager.isTapToClickEnabled = v }
+    var isDoubleTapToRightClickEnabled: Boolean
+        get() = manager.isDoubleTapToRightClickEnabled
+        set(v) { manager.isDoubleTapToRightClickEnabled = v }
 
     private val manager = TrackpadManager(
-        onMove = { dx, dy -> onMove?.invoke(dx, dy) }
+        onMove = { dx, dy -> onMove?.invoke(dx, dy) },
+        onScroll = { delta -> onScroll?.invoke(delta) },
+        onButtonClick = { mask, pressed -> onButtonClick?.invoke(mask, pressed) }
     ) { x, y ->
         icon?.translationX = x
         icon?.translationY = y
     }
 
     private var onMove: ((Int, Int) -> Unit)? = null
+    private var onScroll: ((Int) -> Unit)? = null
+    private var onButtonClick: ((Byte, Boolean) -> Unit)? = null
     private val icon by lazy { findViewById<ImageView>(R.id.trackpointIcon) }
     private val trail = mutableListOf<Point>()
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
@@ -52,6 +65,8 @@ class TrackpadView @JvmOverloads constructor(context: Context, attrs: AttributeS
     }
 
     fun setOnMoveListener(l: (Int, Int) -> Unit) { onMove = l }
+    fun setOnScrollListener(l: (Int) -> Unit) { onScroll = l }
+    fun setOnButtonClickListener(l: (Byte, Boolean) -> Unit) { onButtonClick = l }
 
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
         super.onSizeChanged(w, h, oldw, oldh)

@@ -47,6 +47,9 @@ class MainViewModel @JvmOverloads constructor(
         settings.trackpointSensitivity,
         settings.trackpointCurve,
         settings.isTrackpointAnimationEnabled,
+        settings.isTwoFingerScrollEnabled,
+        settings.isTapToClickEnabled,
+        settings.isDoubleTapToRightClickEnabled,
         _hasPermissions,
         _isBluetoothEnabled,
     ) { p ->
@@ -75,8 +78,11 @@ class MainViewModel @JvmOverloads constructor(
             trackpointSensitivity = p[19] as Float,
             trackpointCurve = p[20] as String,
             isTrackpointAnimationEnabled = p[21] as Boolean,
-            hasPermissions = p[22] as Boolean,
-            isBluetoothEnabled = p[23] as Boolean,
+            isTwoFingerScrollEnabled = p[22] as Boolean,
+            isTapToClickEnabled = p[23] as Boolean,
+            isDoubleTapToRightClickEnabled = p[24] as Boolean,
+            hasPermissions = p[25] as Boolean,
+            isBluetoothEnabled = p[26] as Boolean,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), MainUiState())
 
@@ -232,6 +238,9 @@ class MainViewModel @JvmOverloads constructor(
     fun setTrackpointSensitivity(v: Float) = settings.saveTrackpointSensitivity(v)
     fun setTrackpointCurve(c: String) = settings.saveTrackpointCurve(c)
     fun setTrackpointAnimationEnabled(e: Boolean) = settings.saveTrackpointAnimationEnabled(e)
+    fun setTwoFingerScrollEnabled(e: Boolean) = settings.saveTwoFingerScrollEnabled(e)
+    fun setTapToClickEnabled(e: Boolean) = settings.saveTapToClickEnabled(e)
+    fun setDoubleTapToRightClickEnabled(e: Boolean) = settings.saveDoubleTapToRightClickEnabled(e)
 
     override fun onCleared() { super.onCleared(); hid.unbind() }
 }

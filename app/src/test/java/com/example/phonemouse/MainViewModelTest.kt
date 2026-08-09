@@ -46,6 +46,9 @@ class MainViewModelTest {
         every { settings.trackpointSensitivity } returns MutableStateFlow(1.5f)
         every { settings.trackpointCurve } returns MutableStateFlow("Linear")
         every { settings.isTrackpointAnimationEnabled } returns MutableStateFlow(value = true)
+        every { settings.isTwoFingerScrollEnabled } returns MutableStateFlow(value = true)
+        every { settings.isTapToClickEnabled } returns MutableStateFlow(value = true)
+        every { settings.isDoubleTapToRightClickEnabled } returns MutableStateFlow(value = true)
         
         every { hid.mouseHidService } returns serviceFlow
         

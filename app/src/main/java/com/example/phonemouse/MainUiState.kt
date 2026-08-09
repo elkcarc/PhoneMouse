@@ -27,6 +27,9 @@ data class MainUiState(
     val hasPermissions: Boolean = true,
     val isBluetoothEnabled: Boolean = true,
     val isTestMode: Boolean = false,
+    val isTwoFingerScrollEnabled: Boolean = true,
+    val isTapToClickEnabled: Boolean = true,
+    val isDoubleTapToRightClickEnabled: Boolean = true,
 ) {
     val statusTextRes = when {
         !hasPermissions -> R.string.permissions_required_tap_to_grant

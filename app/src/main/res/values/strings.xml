@@ -78,4 +78,8 @@
     <string name="permissions_denied">Permissions denied. Please grant them to use the mouse features.</string>
     <string name="permissions_required_tap_to_grant">Permissions Required (Tap to Grant)</string>
     <string name="bluetooth_disabled_tap_to_enable">Bluetooth Disabled (Tap to Enable)</string>
+    <string name="gestures">Gestures</string>
+    <string name="two_finger_scroll">2-Finger Scroll</string>
+    <string name="tap_to_click">Tap to Left Click</string>
+    <string name="double_tap_to_right_click">Double Tap to Right Click</string>
 </resources>

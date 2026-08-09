@@ -110,6 +110,8 @@ class MainActivity : AppCompatActivity() {
         }
 
         binding.trackpad.setOnMoveListener { dx, dy -> viewModel.mouseHidService.value?.sendManualMove(dx, dy) }
+        binding.trackpad.setOnScrollListener { delta -> viewModel.mouseHidService.value?.sendManualScroll(delta) }
+        binding.trackpad.setOnButtonClickListener { mask, pressed -> viewModel.mouseHidService.value?.setButtonState(mask, pressed) }
 
         binding.drawerLayout.addDrawerListener(
             object : DrawerLayout.SimpleDrawerListener() {
@@ -282,6 +284,9 @@ class MainActivity : AppCompatActivity() {
             trailToggle.setOnCheckedChangeListener { _, c -> viewModel.setTrailEnabled(c) }
             trackpointAnimationToggle.setOnCheckedChangeListener { _, c -> viewModel.setTrackpointAnimationEnabled(c) }
             confirmDeleteToggle.setOnCheckedChangeListener { _, c -> viewModel.setConfirmDelete(c) }
+            twoFingerScrollToggle.setOnCheckedChangeListener { _, c -> viewModel.setTwoFingerScrollEnabled(c) }
+            tapToClickToggle.setOnCheckedChangeListener { _, c -> viewModel.setTapToClickEnabled(c) }
+            doubleTapToggle.setOnCheckedChangeListener { _, c -> viewModel.setDoubleTapToRightClickEnabled(c) }
             trackpadSensitivitySlider.addOnChangeListener { _, v, f -> if (f) viewModel.setTrackpadSensitivity(v) }
             trackpadAccelerationSlider.addOnChangeListener { _, v, f -> if (f) viewModel.setTrackpadAcceleration(v) }
             trackpointSensitivitySlider.addOnChangeListener { _, v, f -> if (f) viewModel.setTrackpointSensitivity(v) }
@@ -367,6 +372,9 @@ class MainActivity : AppCompatActivity() {
             mode = s.trackpadMode; trackpadSensitivity = s.trackpadSensitivity; trackpadAcceleration = s.trackpadAcceleration
             trackpointSensitivity = s.trackpointSensitivity; trackpointCurve = s.trackpointCurve
             isTrailEnabled = s.isTrackpadMode && s.isTrailEnabled; isTrackpointAnimationEnabled = (!s.isTrackpadMode) && s.isTrackpointAnimationEnabled
+            isTwoFingerScrollEnabled = s.isTwoFingerScrollEnabled
+            isTapToClickEnabled = s.isTapToClickEnabled
+            isDoubleTapToRightClickEnabled = s.isDoubleTapToRightClickEnabled
         }
 
         binding.navDrawerSettings.apply {
@@ -400,6 +408,10 @@ class MainActivity : AppCompatActivity() {
             trackpointAnimationToggle.text = getString(R.string.trackpoint_animation)
             
             if (confirmDeleteToggle.isChecked != s.confirmDelete) confirmDeleteToggle.isChecked = s.confirmDelete
+
+            if (twoFingerScrollToggle.isChecked != s.isTwoFingerScrollEnabled) twoFingerScrollToggle.isChecked = s.isTwoFingerScrollEnabled
+            if (tapToClickToggle.isChecked != s.isTapToClickEnabled) tapToClickToggle.isChecked = s.isTapToClickEnabled
+            if (doubleTapToggle.isChecked != s.isDoubleTapToRightClickEnabled) doubleTapToggle.isChecked = s.isDoubleTapToRightClickEnabled
 
             settingsTitleText.text = getString(R.string.settings); settingsBackBtn.text = getString(R.string.back)
         }
