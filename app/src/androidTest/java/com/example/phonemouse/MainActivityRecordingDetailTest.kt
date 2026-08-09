@@ -55,6 +55,12 @@ class MainActivityRecordingDetailTest {
         MainViewModel.testingHidManager = null
     }
 
+    /**
+     * Purpose: Verify the full lifecycle of editing and removing an input recording.
+     * Before State: A dummy recording "UI Recording Test" is injected into the repository.
+     * During Test: Navigates to recordings panel, swipes right to rename, verifies, then swipes left to delete.
+     * After State: The recording is successfully removed from the UI and repository.
+     */
     @Test
     fun testEditAndRemoveRecordingUI() {
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->

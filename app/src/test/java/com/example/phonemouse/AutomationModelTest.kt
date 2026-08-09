@@ -6,6 +6,12 @@ import org.junit.Test
 
 class AutomationModelTest {
 
+    /**
+     * Purpose: Ensure that AutomationConfig objects can be correctly converted to JSON and back.
+     * Before State: A valid AutomationConfig instance with diverse numeric parameters.
+     * During Test: Calls toJson() and then fromJson() on the resulting string.
+     * After State: All fields in the deserialized object match the original exactly.
+     */
     @Test
     fun `AutomationConfig serialization and deserialization`() {
         val config = AutomationConfig(
@@ -33,6 +39,12 @@ class AutomationModelTest {
         assertEquals(config.delayFrequency, deserialized?.delayFrequency)
     }
 
+    /**
+     * Purpose: Ensure that InputRecording objects (macros) correctly persist their event data through JSON.
+     * Before State: An InputRecording instance containing a semi-colon delimited movement string.
+     * During Test: Serializes the macro to JSON and reconstructs the object from it.
+     * After State: Verification that the complex event string and metadata remain intact.
+     */
     @Test
     fun `InputRecording serialization and deserialization`() {
         val recording = InputRecording(

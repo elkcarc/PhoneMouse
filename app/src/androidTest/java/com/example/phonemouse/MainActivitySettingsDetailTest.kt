@@ -2,6 +2,7 @@ package com.example.phonemouse
 
 import android.Manifest
 import android.app.Application
+import android.content.Context
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat
 import androidx.test.core.app.ActivityScenario
@@ -35,8 +36,11 @@ class MainActivitySettingsDetailTest {
 
     @Before
     fun setup() {
-        MainViewModel.testingHidManager = FakeHidManager(fakeService)
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        context.getSharedPreferences("PhoneMousePrefs", Context.MODE_PRIVATE).edit().clear().commit()
         AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("en"))
+        
+        MainViewModel.testingHidManager = FakeHidManager(fakeService)
     }
 
     @After
@@ -44,6 +48,12 @@ class MainActivitySettingsDetailTest {
         MainViewModel.testingHidManager = null
     }
 
+    /**
+     * Purpose: Verify that the settings menu contains all three primary configuration dropdowns.
+     * Before State: App launched in English, Settings panel navigated to.
+     * During Test: Checks for visibility of Trackpad Mode, Theme, and Language dropdowns.
+     * After State: All three critical settings elements are confirmed to be displayed.
+     */
     @Test
     fun testSettingsMenuVisibility() {
         ActivityScenario.launch(MainActivity::class.java).use {

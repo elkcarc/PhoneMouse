@@ -19,6 +19,9 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
+/**
+ * Instrumented test class for direct UI interactions on the main trackpad screen.
+ */
 @RunWith(AndroidJUnit4::class)
 class MainActivityDirectInteractionTest {
 
@@ -48,6 +51,18 @@ class MainActivityDirectInteractionTest {
         MainViewModel.testingHidManager = null
     }
 
+    /**
+     * Purpose: Verify that the primary mouse button views are interactive.
+     * Expected Before State: Main activity launched.
+     * Actions During Test: Click Left, Right, and Middle buttons.
+     * Expected After State: Buttons remain enabled and the app does not crash.
+     */
+    /**
+     * Purpose: Verify that mouse button UI elements are responsive and enabled on start.
+     * Before State: App launched, default settings active.
+     * During Test: Clicks Left, Right, and Middle mouse buttons.
+     * After State: No crashes occur and buttons remain in an enabled state.
+     */
     @Test
     fun testMouseButtonVisualFeedback() {
         ActivityScenario.launch(MainActivity::class.java).use {
@@ -57,6 +72,18 @@ class MainActivityDirectInteractionTest {
         }
     }
 
+    /**
+     * Purpose: Verify that the scroll control buttons are displayed.
+     * Expected Before State: Main activity launched.
+     * Actions During Test: Click Scroll Up and Scroll Down buttons.
+     * Expected After State: Controls remain visible.
+     */
+    /**
+     * Purpose: Verify that scroll buttons are visible and clickable.
+     * Before State: App launched.
+     * During Test: Clicks the Scroll Up and Scroll Down buttons.
+     * After State: UI remains responsive and buttons are verified as displayed.
+     */
     @Test
     fun testScrollButtons() {
         ActivityScenario.launch(MainActivity::class.java).use {
@@ -65,6 +92,18 @@ class MainActivityDirectInteractionTest {
         }
     }
 
+    /**
+     * Purpose: Verify basic gesture responsiveness of the TrackpadView.
+     * Expected Before State: Main activity launched.
+     * Actions During Test: Perform right and down swipes on the trackpad area.
+     * Expected After State: Trackpad remains visible.
+     */
+    /**
+     * Purpose: Verify that the trackpad surface handles touch gestures.
+     * Before State: App launched.
+     * During Test: Performs horizontal and vertical swipes on the trackpad area.
+     * After State: Trackpad remains visible and no interaction errors are reported.
+     */
     @Test
     fun testTrackpadInteraction() {
         ActivityScenario.launch(MainActivity::class.java).use {

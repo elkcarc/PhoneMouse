@@ -45,6 +45,12 @@ class MouseIntegrationTest {
         current.forEach { it.run() }
     }
 
+    /**
+     * Purpose: Verify that raw manual move values are correctly formatted into standard 4-byte HID packets.
+     * Before State: HID service initialized with mocked Bluetooth components.
+     * During Test: Sends a (10, -20) movement.
+     * After State: Bluetooth device receives [0, 10, -20, 0] (Buttons, X, Y, Scroll).
+     */
     @Test
     fun `manual move sends correct HID packet`() {
         service.sendManualMove(10, -20)
@@ -52,6 +58,12 @@ class MouseIntegrationTest {
         verify { hid.sendReport(host, 0, match { it.contentEquals(expected) }) }
     }
 
+    /**
+     * Purpose: Verify that the recording logic correctly aggregates relative movements over time.
+     * Before State: Recording toggled ON.
+     * During Test: Injects multiple moves and clicks at simulated time intervals.
+     * After State: The final recording string matches the expected time-stamped sequence.
+     */
     @Test
     fun `recording captures multiple HID events`() {
         every { SystemClock.elapsedRealtime() } returns 1000L
@@ -73,6 +85,12 @@ class MouseIntegrationTest {
         assertEquals(expected, finishedData)
     }
 
+    /**
+     * Purpose: Verify that playback logic correctly re-dispatches packets via the main loop handler.
+     * Before State: A valid recording string provided.
+     * During Test: Toggles playback ON.
+     * After State: Verification that the scheduled handler runnables exist and send the correct data.
+     */
     @Test
     fun `playback triggers packets through handler`() {
         val data = "100:0,10,10,0;300:1,0,0,0"

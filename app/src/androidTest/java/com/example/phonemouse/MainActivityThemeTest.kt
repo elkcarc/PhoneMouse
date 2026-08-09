@@ -55,6 +55,12 @@ class MainActivityThemeTest {
         MainViewModel.testingHidManager = null
     }
 
+    /**
+     * Purpose: Verify that switching between Light and Dark themes actually updates the text color styles.
+     * Before State: App launched in English, Settings panel open.
+     * During Test: Selects "Light" theme, verifies BLACK text, then selects "Dark" theme, verifies WHITE text.
+     * After State: The UI effectively re-renders with the chosen Material theme colors.
+     */
     @Test
     fun testThemeSwitching_LightToDarkColorChange() {
         ActivityScenario.launch(MainActivity::class.java).use {

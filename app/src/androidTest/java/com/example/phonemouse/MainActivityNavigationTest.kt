@@ -2,6 +2,7 @@ package com.example.phonemouse
 
 import android.Manifest
 import android.app.Application
+import android.content.Context
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat
 import androidx.test.core.app.ActivityScenario
@@ -36,8 +37,11 @@ class MainActivityNavigationTest {
 
     @Before
     fun setup() {
-        MainViewModel.testingHidManager = FakeHidManager(fakeService)
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        context.getSharedPreferences("PhoneMousePrefs", Context.MODE_PRIVATE).edit().clear().commit()
         AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("en"))
+        
+        MainViewModel.testingHidManager = FakeHidManager(fakeService)
     }
 
     @After
@@ -45,6 +49,12 @@ class MainActivityNavigationTest {
         MainViewModel.testingHidManager = null
     }
 
+    /**
+     * Purpose: Verify basic navigation from the main screen to the settings panel.
+     * Before State: App launched, drawer closed.
+     * During Test: Opens drawer, clicks Settings button.
+     * After State: The settings panel is verified as visible to the user.
+     */
     @Test
     fun testNavigationToSettings() {
         ActivityScenario.launch(MainActivity::class.java).use {
@@ -54,6 +64,12 @@ class MainActivityNavigationTest {
         }
     }
 
+    /**
+     * Purpose: Verify that the system 'Back' button correctly pops the panel stack.
+     * Before State: App launched in English, Profiles panel deep-linked or navigated to.
+     * During Test: Clicks Back once (to main drawer) then twice (to close drawer).
+     * After State: The drawer is closed and the main trackpad screen is the active focused view.
+     */
     @Test
     fun testBackButtonNavigationSequence() {
         ActivityScenario.launch(MainActivity::class.java).use {

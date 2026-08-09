@@ -31,6 +31,12 @@ class AutomationRepositoryTest {
         repo = AutomationRepository(context)
     }
 
+    /**
+     * Purpose: Verify that saving the selected index updates both the StateFlow and SharedPreferences.
+     * Before State: Repository initialized with mocked context and empty preferences.
+     * During Test: Calls saveSelectedIndex(5).
+     * After State: The selectedIndex flow emits 5, and the editor putInt() is verified.
+     */
     @Test
     fun `saveSelectedIndex updates flow and prefs`() {
         repo.saveSelectedIndex(5)

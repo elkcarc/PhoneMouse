@@ -49,6 +49,12 @@ class MainActivitySettingsLogicTest {
         MainViewModel.testingHidManager = null
     }
 
+    /**
+     * Purpose: Verify that moving the sensitivity/acceleration sliders updates their text labels in real-time.
+     * Before State: Settings panel open, sliders at default values.
+     * During Test: Performs horizontal swipes on the Material sliders.
+     * After State: Verification that the associated TextViews now contain updated multiplier text (e.g., "x").
+     */
     @Test
     fun testSliderLabelUpdates() {
         ActivityScenario.launch(MainActivity::class.java).use {
@@ -65,6 +71,12 @@ class MainActivitySettingsLogicTest {
         }
     }
 
+    /**
+     * Purpose: Verify that UI toggle states (like Trackpad Trail) survive an activity recreation.
+     * Before State: Trail toggle is in its default (checked) state.
+     * During Test: Toggles the setting to OFF, then manually triggers activity recreation.
+     * After State: After restart, the toggle remains in the OFF (unchecked) state.
+     */
     @Test
     fun testTogglePersistenceAcrossRecreation() {
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->

@@ -89,6 +89,12 @@ class MainActivityFunctionalTest {
         )
     }
 
+    /**
+     * Purpose: Verify that disabling "Confirm before deleting" allows immediate item removal.
+     * Before State: App in English, confirmation setting disabled in Settings panel.
+     * During Test: Adds a profile named "Fast Delete" and performs a deliberate slow swipe to remove it.
+     * After State: The item is removed from the RecyclerView without showing a confirmation dialog.
+     */
     @Test
     fun testNoDeleteConfirmationWhenDisabled() {
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
@@ -132,6 +138,12 @@ class MainActivityFunctionalTest {
         }
     }
 
+    /**
+     * Purpose: Verify that the sensitivity slider actually scales outgoing HID movement packets.
+     * Before State: App launched, virtual HID service started.
+     * During Test: Measures movement packets at default (3x) vs maximum (8x) sensitivity using a report interceptor.
+     * After State: Verification that the total 'dx' movement is higher when sensitivity is maximized.
+     */
     @Test
     fun testSensitivitySettingsFunctionalEffect() {
         var totalDx = 0

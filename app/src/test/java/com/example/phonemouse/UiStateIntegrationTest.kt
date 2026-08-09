@@ -15,6 +15,12 @@ class UiStateIntegrationTest {
         assertEquals(false, state.isPlaying)
     }
 
+    /**
+     * Purpose: Verify the mapping logic that converts boolean flags into user-facing status strings.
+     * Before State: MainUiState instance with various flag combinations.
+     * During Test: Checks resource IDs for No Permissions, No Bluetooth, and Disconnected states.
+     * After State: Each combination correctly maps to the appropriate localized string resource.
+     */
     @Test
     fun `MainUiState calculates status text correctly based on permissions`() {
         val noPerms = MainUiState(hasPermissions = false)

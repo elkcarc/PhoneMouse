@@ -58,6 +58,12 @@ class MainViewModelTest {
         unmockkAll()
     }
 
+    /**
+     * Purpose: Verify that toggling settings visibility updates the corresponding UI state stream.
+     * Before State: uiState flow collected via Turbine.
+     * During Test: Calls setSettingsVisible(true).
+     * After State: The flow emits an updated state with isSettingsVisible = true.
+     */
     @Test
     fun `toggle settings visibility updates UI state`() = runTest {
         viewModel.uiState.test {
@@ -70,6 +76,12 @@ class MainViewModelTest {
         }
     }
 
+    /**
+     * Purpose: Verify that changing the active panel (e.g. to Profiles) is reflected in the UI state.
+     * Before State: Initial UI state active.
+     * During Test: Calls setActivePanel("Profiles").
+     * After State: uiState emits a new state with the activePanel set to "Profiles".
+     */
     @Test
     fun `setActivePanel updates UI state`() = runTest {
         viewModel.uiState.test {

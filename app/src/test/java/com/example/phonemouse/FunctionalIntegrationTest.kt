@@ -62,6 +62,12 @@ class FunctionalIntegrationTest {
         Dispatchers.resetMain()
     }
 
+    /**
+     * Purpose: Verify that a movement command in the ViewModel reaches the low-level HID stack.
+     * Before State: ViewModel initialized with a mocked HidManager and MouseHidService.
+     * During Test: Calls sendManualMove(10, 20) on the service flow.
+     * After State: Verification that BluetoothHidDevice.sendReport was called with the correct byte array.
+     */
     @Test
     fun `viewModel movement propagates to hid service`() {
         val dx = 10
@@ -70,6 +76,12 @@ class FunctionalIntegrationTest {
         verify { mockHid.sendReport(mockHost, 0, match { it[1] == 10.toByte() && it[2] == 20.toByte() }) }
     }
 
+    /**
+     * Purpose: Verify that selecting a profile in the UI correctly updates the active service parameters.
+     * Before State: App running, dummy profile available.
+     * During Test: Calls selectConfig(0) on the ViewModel.
+     * After State: The repository is queried for the config to be set on the HID service.
+     */
     @Test
     fun `selecting config in viewmodel updates service config`() {
         val config = AutomationConfig("Test", 1, 2, 3, 4, 5, 6, 7)
@@ -78,6 +90,12 @@ class FunctionalIntegrationTest {
         verify { repo.getActiveConfig() }
     }
 
+    /**
+     * Purpose: Verify that settings changes initiated in the ViewModel are persisted to disk.
+     * Before State: ViewModel and SettingsRepository mocked.
+     * During Test: Updates theme, sensitivity, and language through ViewModel methods.
+     * After State: The corresponding save methods in the SettingsRepository are verified as called.
+     */
     @Test
     fun `settings changes in viewmodel persist to repository`() {
         viewModel.setThemeMode("Dark")

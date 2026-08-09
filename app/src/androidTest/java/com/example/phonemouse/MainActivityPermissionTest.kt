@@ -1,6 +1,7 @@
 package com.example.phonemouse
 
 import android.app.Application
+import android.content.Context
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat
 import androidx.test.core.app.ActivityScenario
@@ -32,8 +33,12 @@ class MainActivityPermissionTest {
     @Before
     fun setup() {
         device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
-        MainViewModel.testingHidManager = FakeHidManager(fakeService)
+        
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        context.getSharedPreferences("PhoneMousePrefs", Context.MODE_PRIVATE).edit().clear().commit()
         AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("en"))
+        
+        MainViewModel.testingHidManager = FakeHidManager(fakeService)
     }
 
     @After
@@ -41,6 +46,12 @@ class MainActivityPermissionTest {
         MainViewModel.testingHidManager = null
     }
 
+    /**
+     * Purpose: Verify that denying requested permissions results in a graceful UI state.
+     * Before State: App launched with permissions not yet granted.
+     * During Test: Clicks the status button, then selects "Deny" on the system permission dialog.
+     * After State: The status button text correctly updates to reflect the missing permissions.
+     */
     @Test
     fun testPermissionDenialGracefulFailure() {
         ActivityScenario.launch(MainActivity::class.java).use {

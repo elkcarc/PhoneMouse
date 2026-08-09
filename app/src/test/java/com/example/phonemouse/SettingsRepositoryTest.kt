@@ -26,6 +26,12 @@ class SettingsRepositoryTest {
         repo = SettingsRepository(context)
     }
 
+    /**
+     * Purpose: Verify that sensitivity values are clamped to the allowed range (0.1 - 8.0).
+     * Before State: SettingsRepository initialized.
+     * During Test: Attempts to save sensitivity values of 10.0 and 0.0.
+     * After State: The repository clamps the values to 8.0 and 0.1 respectively.
+     */
     @Test
     fun `saveTrackpadSensitivity clamps values`() {
         repo.saveTrackpadSensitivity(10.0f)

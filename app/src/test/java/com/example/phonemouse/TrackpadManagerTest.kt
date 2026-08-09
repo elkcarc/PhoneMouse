@@ -35,6 +35,12 @@ class TrackpadManagerTest {
         manager.onSizeChanged(1000, 1000)
     }
 
+    /**
+     * Purpose: Verify the responsiveness of relative trackpad movement including smoothing.
+     * Before State: Trackpad mode active, sensitivity at 1.0.
+     * During Test: Injects ACTION_MOVE event after a DOWN event.
+     * After State: verification that raw delta is smoothed (e.g. 10px raw -> 7px smoothed).
+     */
     @Test
     fun `trackpad mode smoothed movement`() {
         manager.mode = "Trackpad"
@@ -52,6 +58,12 @@ class TrackpadManagerTest {
         assertEquals(15, lastDy)
     }
 
+    /**
+     * Purpose: Verify that trackpoint mode correctly calculates velocity based on distance from center.
+     * Before State: Trackpoint mode active, Linear curve selected.
+     * During Test: Places touch 100 pixels away from the 500px center.
+     * After State: verification that a velocity of 5px is generated (normalized distance 0.2 * base 25).
+     */
     @Test
     fun `trackpoint mode linear curve`() {
         manager.mode = "Trackpoint"

@@ -71,6 +71,12 @@ class MainActivityLocalizationTest {
         Thread.sleep(2000) // Longer wait for locale switch
     }
 
+    /**
+     * Purpose: Verify that switching to the Russian language updates the UI strings accordingly.
+     * Before State: App launched in English (forced in setup), Settings panel open.
+     * During Test: Selects the 3rd index in the language dropdown (Russian).
+     * After State: The settings title text is verified to be the Russian string "Настройки".
+     */
     @Test
     fun testLanguage_Russian() {
         ActivityScenario.launch(MainActivity::class.java).use {
@@ -80,6 +86,12 @@ class MainActivityLocalizationTest {
         }
     }
 
+    /**
+     * Purpose: Verify that switching to the Spanish language updates the UI strings accordingly.
+     * Before State: App launched in English, Settings panel open.
+     * During Test: Selects the 1st index in the language dropdown (Spanish).
+     * After State: The settings title text is verified to be the Spanish string "Ajustes".
+     */
     @Test
     fun testLanguage_Spanish() {
         ActivityScenario.launch(MainActivity::class.java).use {
@@ -89,6 +101,12 @@ class MainActivityLocalizationTest {
         }
     }
 
+    /**
+     * Purpose: Verify that switching to the Japanese language updates the UI strings accordingly.
+     * Before State: App launched in English, Settings panel open.
+     * During Test: Selects the 2nd index in the language dropdown (Japanese).
+     * After State: The settings title text is verified to be the Japanese string "設定".
+     */
     @Test
     fun testLanguage_Japanese() {
         ActivityScenario.launch(MainActivity::class.java).use {
@@ -98,6 +116,12 @@ class MainActivityLocalizationTest {
         }
     }
 
+    /**
+     * Purpose: Verify that switching to the Chinese language updates the UI strings accordingly.
+     * Before State: App launched in English, Settings panel open.
+     * During Test: Selects the 4th index in the language dropdown (Chinese).
+     * After State: The settings title text is verified to be the Chinese string "设置".
+     */
     @Test
     fun testLanguage_Chinese() {
         ActivityScenario.launch(MainActivity::class.java).use {

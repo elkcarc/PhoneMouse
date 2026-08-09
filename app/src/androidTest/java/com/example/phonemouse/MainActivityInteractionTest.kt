@@ -54,6 +54,12 @@ class MainActivityInteractionTest {
         MainViewModel.testingHidManager = null
     }
 
+    /**
+     * Purpose: Verify that adding a profile and then tapping it only selects it (doesn't trigger edit).
+     * Before State: App launched in English, profiles list empty or default.
+     * During Test: Adds a profile "UI Selection Test", then taps it in the list.
+     * After State: The profile panel remains visible and no edit dialog appears on simple tap.
+     */
     @Test
     fun testAddProfileAndSelectionBehavior() {
         ActivityScenario.launch(MainActivity::class.java).use {
@@ -74,6 +80,12 @@ class MainActivityInteractionTest {
         }
     }
 
+    /**
+     * Purpose: Verify the standard profile deletion flow including the confirmation dialog.
+     * Before State: App launched, Drawer locked open for consistent interaction.
+     * During Test: Adds "To Delete", swipes left slow to trigger dialog, clicks Positive button.
+     * After State: The profile is successfully removed from the RecyclerView.
+     */
     @Test
     fun testProfileDeletionUI() {
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
