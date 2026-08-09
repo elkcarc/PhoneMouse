@@ -123,4 +123,46 @@ class MainActivityInteractionTest {
             onView(withText("To Delete")).check(doesNotExist())
         }
     }
+
+    /**
+     * Purpose: Verify that canceling a profile deletion keeps the item in the list.
+     * Before State: A profile "Cancel Delete Profile" exists.
+     * During Test: Swipes left to delete, clicks Cancel in the confirmation dialog.
+     * After State: The profile remains in the list.
+     */
+    @Test
+    fun testCancelProfileDeletion() {
+        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+            onView(withContentDescription("Open drawer")).perform(click())
+            Thread.sleep(500)
+            onView(withId(R.id.profilesBtn)).perform(click())
+            Thread.sleep(500)
+
+            onView(withId(R.id.addVariationBtn)).perform(click())
+            Thread.sleep(1000)
+            onView(withId(R.id.editName)).perform(replaceText("Cancel Delete Profile"), closeSoftKeyboard())
+            onView(withId(android.R.id.button1)).perform(click())
+            Thread.sleep(1000)
+
+            scenario.onActivity { it.findViewById<DrawerLayout>(R.id.drawerLayout).setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_OPEN) }
+
+            onView(withId(R.id.configsRecyclerView)).perform(
+                RecyclerViewActions.actionOnItem<RecyclerView.ViewHolder>(
+                    hasDescendant(withText("Cancel Delete Profile")),
+                    androidx.test.espresso.action.GeneralSwipeAction(
+                        Swipe.SLOW,
+                        GeneralLocation.CENTER_RIGHT,
+                        GeneralLocation.CENTER_LEFT,
+                        Press.FINGER
+                    )
+                )
+            )
+            Thread.sleep(1000)
+
+            onView(withId(android.R.id.button2)).perform(click()) // Cancel
+            Thread.sleep(500)
+
+            onView(withText("Cancel Delete Profile")).check(androidx.test.espresso.assertion.ViewAssertions.matches(isDisplayed()))
+        }
+    }
 }

@@ -109,4 +109,41 @@ class MainActivityDialogDetailTest {
             onView(withText("Cancel Test")).check(doesNotExist())
         }
     }
+
+    /**
+     * Purpose: Verify that canceling an edit on an EXISTING profile discards the changes.
+     * Before State: A profile exists ("Profile 1").
+     * During Test: Opens edit dialog for "Profile 1", changes name to "Edited Name", clicks Cancel.
+     * After State: The profile name remains "Profile 1".
+     */
+    @Test
+    fun testCancelExistingProfileEdit() {
+        ActivityScenario.launch(MainActivity::class.java).use {
+            onView(withContentDescription("Open drawer")).perform(click())
+            Thread.sleep(500)
+            onView(withId(R.id.profilesBtn)).perform(click())
+            Thread.sleep(500)
+
+            // Swipe right to edit "Profile 1"
+            onView(withId(R.id.configsRecyclerView)).perform(
+                androidx.test.espresso.contrib.RecyclerViewActions.actionOnItemAtPosition<androidx.recyclerview.widget.RecyclerView.ViewHolder>(
+                    0,
+                    androidx.test.espresso.action.GeneralSwipeAction(
+                        androidx.test.espresso.action.Swipe.SLOW,
+                        androidx.test.espresso.action.GeneralLocation.CENTER_LEFT,
+                        androidx.test.espresso.action.GeneralLocation.CENTER_RIGHT,
+                        androidx.test.espresso.action.Press.FINGER
+                    )
+                )
+            )
+            Thread.sleep(500)
+
+            onView(withId(R.id.editName)).perform(replaceText("Edited Name"), closeSoftKeyboard())
+            onView(withId(android.R.id.button2)).perform(click()) // Cancel
+            Thread.sleep(500)
+
+            onView(withText("Profile 1")).check(matches(isDisplayed()))
+            onView(withText("Edited Name")).check(doesNotExist())
+        }
+    }
 }

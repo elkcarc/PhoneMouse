@@ -6,6 +6,7 @@ import android.content.Context
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat
 import androidx.drawerlayout.widget.DrawerLayout
+import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.RecyclerView
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
@@ -118,6 +119,84 @@ class MainActivityRecordingDetailTest {
             Thread.sleep(1000)
 
             onView(withText("UI Updated Name")).check(doesNotExist())
+        }
+    }
+
+    /**
+     * Purpose: Verify that canceling a recording rename discards changes.
+     * Before State: A dummy recording "Cancel Rename Test" exists.
+     * During Test: Opens rename dialog, changes name to "Should Not Save", clicks Cancel.
+     * After State: The recording name remains "Cancel Rename Test".
+     */
+    @Test
+    fun testCancelRecordingRename() {
+        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+            val dummyName = "Cancel Rename Test"
+            scenario.onActivity { ViewModelProvider(it)[MainViewModel::class.java].addDummyRecording(dummyName) }
+            
+            onView(withContentDescription("Open drawer")).perform(click())
+            Thread.sleep(500)
+            onView(withId(R.id.recordingsBtn)).perform(click())
+            Thread.sleep(500)
+            scenario.onActivity { it.findViewById<DrawerLayout>(R.id.drawerLayout).setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_OPEN) }
+
+            onView(withId(R.id.recordingsRecyclerView)).perform(
+                RecyclerViewActions.actionOnItem<RecyclerView.ViewHolder>(
+                    hasDescendant(withText(dummyName)),
+                    androidx.test.espresso.action.GeneralSwipeAction(
+                        Swipe.SLOW,
+                        GeneralLocation.CENTER_LEFT,
+                        GeneralLocation.CENTER_RIGHT,
+                        Press.FINGER
+                    )
+                )
+            )
+            Thread.sleep(1000)
+
+            onView(withId(R.id.editRecName)).perform(replaceText("Should Not Save"), closeSoftKeyboard())
+            onView(withId(android.R.id.button2)).perform(click()) // Cancel
+            Thread.sleep(500)
+
+            onView(withText(dummyName)).check(matches(isDisplayed()))
+            onView(withText("Should Not Save")).check(doesNotExist())
+        }
+    }
+
+    /**
+     * Purpose: Verify that canceling a recording deletion keeps the item in the list.
+     * Before State: A dummy recording "Cancel Delete Test" exists.
+     * During Test: Swipes left to delete, clicks Cancel in the confirmation dialog.
+     * After State: The recording remains in the list.
+     */
+    @Test
+    fun testCancelRecordingDeletion() {
+        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+            val dummyName = "Cancel Delete Test"
+            scenario.onActivity { ViewModelProvider(it)[MainViewModel::class.java].addDummyRecording(dummyName) }
+            
+            onView(withContentDescription("Open drawer")).perform(click())
+            Thread.sleep(500)
+            onView(withId(R.id.recordingsBtn)).perform(click())
+            Thread.sleep(500)
+            scenario.onActivity { it.findViewById<DrawerLayout>(R.id.drawerLayout).setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_OPEN) }
+
+            onView(withId(R.id.recordingsRecyclerView)).perform(
+                RecyclerViewActions.actionOnItem<RecyclerView.ViewHolder>(
+                    hasDescendant(withText(dummyName)),
+                    androidx.test.espresso.action.GeneralSwipeAction(
+                        Swipe.SLOW,
+                        GeneralLocation.CENTER_RIGHT,
+                        GeneralLocation.CENTER_LEFT,
+                        Press.FINGER
+                    )
+                )
+            )
+            Thread.sleep(1000)
+
+            onView(withId(android.R.id.button2)).perform(click()) // Cancel Delete
+            Thread.sleep(500)
+
+            onView(withText(dummyName)).check(matches(isDisplayed()))
         }
     }
 }
