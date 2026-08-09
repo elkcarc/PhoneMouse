@@ -30,8 +30,11 @@ class MainActivitySettingsDetailTest {
     @JvmField
     val grantPermissionRule: GrantPermissionRule = GrantPermissionRule.grant(
         Manifest.permission.BLUETOOTH_CONNECT,
+        Manifest.permission.BLUETOOTH_SCAN,
+        Manifest.permission.BLUETOOTH_ADVERTISE,
         Manifest.permission.POST_NOTIFICATIONS,
-        Manifest.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE
+        Manifest.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE,
+        Manifest.permission.ACCESS_FINE_LOCATION
     )
 
     @Before
@@ -39,7 +42,6 @@ class MainActivitySettingsDetailTest {
         val context = ApplicationProvider.getApplicationContext<Application>()
         context.getSharedPreferences("PhoneMousePrefs", Context.MODE_PRIVATE).edit().clear().commit()
         AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("en"))
-        
         MainViewModel.testingHidManager = FakeHidManager(fakeService)
     }
 

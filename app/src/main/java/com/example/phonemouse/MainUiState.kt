@@ -26,6 +26,7 @@ data class MainUiState(
     val isTrackpointAnimationEnabled: Boolean = true,
     val hasPermissions: Boolean = true,
     val isBluetoothEnabled: Boolean = true,
+    val isTestMode: Boolean = false,
 ) {
     val statusTextRes = when {
         !hasPermissions -> R.string.permissions_required_tap_to_grant

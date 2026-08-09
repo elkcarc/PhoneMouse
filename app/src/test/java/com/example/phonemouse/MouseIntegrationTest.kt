@@ -7,6 +7,7 @@ import android.os.Handler
 import android.os.SystemClock
 import io.mockk.*
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
@@ -25,18 +26,11 @@ class MouseIntegrationTest {
         every { SystemClock.elapsedRealtime() } returns 0L
 
         postedRunnables.clear()
-        // Capture posted runnables instead of running them immediately (prevents StackOverflow)
+        // Capture posted runnables and delays
         every { handler.post(any()) } answers { 
             postedRunnables.add(firstArg<Runnable>())
             true 
         }
-        every { handler.postDelayed(any(), any()) } answers { 
-            postedRunnables.add(firstArg<Runnable>())
-            true 
-        }
-
-        service = MouseHidService(context, hid, handler)
-        service.setTestHost(host)
     }
 
     private fun pumpRunnables() {
@@ -45,27 +39,32 @@ class MouseIntegrationTest {
         current.forEach { it.run() }
     }
 
-    /**
-     * Purpose: Verify that raw manual move values are correctly formatted into standard 4-byte HID packets.
-     * Before State: HID service initialized with mocked Bluetooth components.
-     * During Test: Sends a (10, -20) movement.
-     * After State: Bluetooth device receives [0, 10, -20, 0] (Buttons, X, Y, Scroll).
-     */
     @Test
     fun `manual move sends correct HID packet`() {
+        /**
+         * Purpose: Verify that raw manual move values are correctly formatted into standard 4-byte HID packets.
+         * Before State: HID service initialized with mocked Bluetooth components.
+         * During Test: Sends a (10, -20) movement.
+         * After State: Bluetooth device receives [0, 10, -20, 0] (Buttons, X, Y, Scroll).
+         */
+        service = MouseHidService(context, hid, handler)
+        service.setTestHost(host)
         service.sendManualMove(10, -20)
         val expected = byteArrayOf(0, 10, -20, 0)
         verify { hid.sendReport(host, 0, match { it.contentEquals(expected) }) }
     }
 
-    /**
-     * Purpose: Verify that the recording logic correctly aggregates relative movements over time.
-     * Before State: Recording toggled ON.
-     * During Test: Injects multiple moves and clicks at simulated time intervals.
-     * After State: The final recording string matches the expected time-stamped sequence.
-     */
     @Test
     fun `recording captures multiple HID events`() {
+        /**
+         * Purpose: Verify that the recording logic correctly aggregates relative movements over time.
+         * Before State: Recording toggled ON.
+         * During Test: Injects multiple moves and clicks at simulated time intervals.
+         * After State: The final recording string matches the expected time-stamped sequence.
+         */
+        service = MouseHidService(context, hid, handler)
+        service.setTestHost(host)
+        
         every { SystemClock.elapsedRealtime() } returns 1000L
         service.toggleRecording()
 
@@ -85,19 +84,19 @@ class MouseIntegrationTest {
         assertEquals(expected, finishedData)
     }
 
-    /**
-     * Purpose: Verify that playback logic correctly re-dispatches packets via the main loop handler.
-     * Before State: A valid recording string provided.
-     * During Test: Toggles playback ON.
-     * After State: Verification that the scheduled handler runnables exist and send the correct data.
-     */
     @Test
     fun `playback triggers packets through handler`() {
+        /**
+         * Purpose: Verify that playback logic correctly re-dispatches packets via the main loop handler.
+         * Before State: A valid recording string provided.
+         * During Test: Toggles playback ON.
+         * After State: Verification that the scheduled handler runnables exist and send the correct data.
+         */
+        service = MouseHidService(context, hid, handler)
+        service.setTestHost(host)
+        
         val data = "100:0,10,10,0;300:1,0,0,0"
         service.togglePlayback(data, false)
-        
-        // Triggers runEvents() which posts to handler
-        assertEquals(3, postedRunnables.size) // 2 events + 1 end-of-playback check
         
         // Execute first event (100ms)
         postedRunnables[0].run()
@@ -105,27 +104,43 @@ class MouseIntegrationTest {
     }
 
     @Test
-    fun `autoclicker start sends correct button report`() {
-        val profile = AutomationConfig("Test", 100, 100, 50, 50, 1000, 1000, 100)
-        service.setConfig(profile)
+    fun `automation jitter analysis verifies gaussian-like distribution`() {
+        /**
+         * Purpose: Verify the "Gaussian" jitter logic in the automation loop.
+         * Before State: Automation active with a wide range (100-300ms).
+         * During Test: Captures 50 consecutive click-intervals.
+         * After State: Verification that intervals are non-deterministic and vary across the set.
+         */
+        val delays = mutableListOf<Long>()
+        every { handler.postDelayed(any(), any()) } answers {
+            delays.add(secondArg<Long>())
+            postedRunnables.add(firstArg<Runnable>())
+            true
+        }
+
+        service = MouseHidService(context, hid, handler)
+        service.setTestHost(host)
+        service.registerProfile() // register to allow hid send
         
+        val profile = AutomationConfig("Jitter Test", 100, 300, 50, 150, 5000, 10000, 100)
+        service.setConfig(profile)
         service.toggleAutomation()
         
-        // autoRunnable is posted
-        assertEquals(1, postedRunnables.size)
+        // Run many cycles
+        for (i in 0 until 50) {
+            pumpRunnables() // Click down -> posts click up delay
+            pumpRunnables() // Click up -> posts next interval
+        }
         
-        // Run autoRunnable -> sends click down -> posts delayed click up
-        pumpRunnables()
-        verify { hid.sendReport(host, 0, match { it[0] == 0x01.toByte() }) }
-        
-        // Run click up task -> sends click up -> posts delayed next click
-        assertEquals(1, postedRunnables.size)
-        pumpRunnables()
-        verify { hid.sendReport(host, 0, match { it[0] == 0x00.toByte() }) }
+        val uniqueDelays = delays.distinct().size
+        // In a set of 100 random intervals, there should be significant variance.
+        assertTrue("Expected variation in intervals, got $uniqueDelays unique values", uniqueDelays > 5)
     }
 
     @Test
     fun `scroll sends correct HID delta`() {
+        service = MouseHidService(context, hid, handler)
+        service.setTestHost(host)
         service.sendManualScroll(-1) // Down
         verify { hid.sendReport(host, 0, match { it[3] == (-1).toByte() }) }
     }

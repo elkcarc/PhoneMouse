@@ -19,8 +19,9 @@ class MouseHidService(
     private var host: BluetoothDevice? = null
 
     /** Internal for testing. Simulates a host connection. */
-    fun setTestHost(device: BluetoothDevice?) {
+    fun setTestHost(device: BluetoothDevice?, name: String? = "TestHost") {
         host = device
+        _deviceName.value = name
         _isConnected.value = device != null
     }
 
@@ -47,6 +48,7 @@ class MouseHidService(
     var reportInterceptor: ((ByteArray) -> Unit)? = null
     /** If true, real hardware calls (sendReport) are bypassed. Defaults to false in production. */
     var isTestMode = false
+    fun isTestModeFlow() = flowOf(isTestMode)
 
     /** Total duration of the most recently finished recording in ms. */
     var lastRecordingDuration: Long = 0

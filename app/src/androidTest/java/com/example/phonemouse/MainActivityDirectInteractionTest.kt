@@ -19,9 +19,6 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
-/**
- * Instrumented test class for direct UI interactions on the main trackpad screen.
- */
 @RunWith(AndroidJUnit4::class)
 class MainActivityDirectInteractionTest {
 
@@ -33,8 +30,11 @@ class MainActivityDirectInteractionTest {
     @JvmField
     val grantPermissionRule: GrantPermissionRule = GrantPermissionRule.grant(
         Manifest.permission.BLUETOOTH_CONNECT,
+        Manifest.permission.BLUETOOTH_SCAN,
+        Manifest.permission.BLUETOOTH_ADVERTISE,
         Manifest.permission.POST_NOTIFICATIONS,
-        Manifest.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE
+        Manifest.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE,
+        Manifest.permission.ACCESS_FINE_LOCATION
     )
 
     @Before
@@ -42,7 +42,6 @@ class MainActivityDirectInteractionTest {
         val context = ApplicationProvider.getApplicationContext<Application>()
         context.getSharedPreferences("PhoneMousePrefs", Context.MODE_PRIVATE).edit().clear().commit()
         AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("en"))
-        
         MainViewModel.testingHidManager = FakeHidManager(fakeService)
     }
 
@@ -53,15 +52,9 @@ class MainActivityDirectInteractionTest {
 
     /**
      * Purpose: Verify that the primary mouse button views are interactive.
-     * Expected Before State: Main activity launched.
-     * Actions During Test: Click Left, Right, and Middle buttons.
-     * Expected After State: Buttons remain enabled and the app does not crash.
-     */
-    /**
-     * Purpose: Verify that mouse button UI elements are responsive and enabled on start.
-     * Before State: App launched, default settings active.
-     * During Test: Clicks Left, Right, and Middle mouse buttons.
-     * After State: No crashes occur and buttons remain in an enabled state.
+     * Before State: Main activity launched.
+     * During Test: Click Left, Right, and Middle buttons.
+     * After State: Buttons remain enabled and the app does not crash.
      */
     @Test
     fun testMouseButtonVisualFeedback() {
@@ -74,15 +67,9 @@ class MainActivityDirectInteractionTest {
 
     /**
      * Purpose: Verify that the scroll control buttons are displayed.
-     * Expected Before State: Main activity launched.
-     * Actions During Test: Click Scroll Up and Scroll Down buttons.
-     * Expected After State: Controls remain visible.
-     */
-    /**
-     * Purpose: Verify that scroll buttons are visible and clickable.
-     * Before State: App launched.
-     * During Test: Clicks the Scroll Up and Scroll Down buttons.
-     * After State: UI remains responsive and buttons are verified as displayed.
+     * Before State: Main activity launched.
+     * During Test: Click Scroll Up and Scroll Down buttons.
+     * After State: Controls remain visible and clickable.
      */
     @Test
     fun testScrollButtons() {
@@ -94,15 +81,9 @@ class MainActivityDirectInteractionTest {
 
     /**
      * Purpose: Verify basic gesture responsiveness of the TrackpadView.
-     * Expected Before State: Main activity launched.
-     * Actions During Test: Perform right and down swipes on the trackpad area.
-     * Expected After State: Trackpad remains visible.
-     */
-    /**
-     * Purpose: Verify that the trackpad surface handles touch gestures.
-     * Before State: App launched.
-     * During Test: Performs horizontal and vertical swipes on the trackpad area.
-     * After State: Trackpad remains visible and no interaction errors are reported.
+     * Before State: Main activity launched.
+     * During Test: Perform right and down swipes on the trackpad area.
+     * After State: Trackpad remains visible and responsive to touch input.
      */
     @Test
     fun testTrackpadInteraction() {

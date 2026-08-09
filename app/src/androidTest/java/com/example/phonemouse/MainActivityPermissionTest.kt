@@ -1,5 +1,6 @@
 package com.example.phonemouse
 
+import android.Manifest
 import android.app.Application
 import android.content.Context
 import androidx.appcompat.app.AppCompatDelegate
@@ -12,6 +13,7 @@ import androidx.test.espresso.assertion.ViewAssertions.matches
 import androidx.test.espresso.matcher.ViewMatchers.*
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import androidx.test.rule.GrantPermissionRule
 import androidx.test.uiautomator.By
 import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.Until
@@ -28,6 +30,17 @@ class MainActivityPermissionTest {
         isTestMode = true
     }
 
+    @Rule
+    @JvmField
+    val grantPermissionRule: GrantPermissionRule = GrantPermissionRule.grant(
+        Manifest.permission.BLUETOOTH_CONNECT,
+        Manifest.permission.BLUETOOTH_SCAN,
+        Manifest.permission.BLUETOOTH_ADVERTISE,
+        Manifest.permission.POST_NOTIFICATIONS,
+        Manifest.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE,
+        Manifest.permission.ACCESS_FINE_LOCATION
+    )
+
     private lateinit var device: UiDevice
 
     @Before
@@ -37,7 +50,6 @@ class MainActivityPermissionTest {
         val context = ApplicationProvider.getApplicationContext<Application>()
         context.getSharedPreferences("PhoneMousePrefs", Context.MODE_PRIVATE).edit().clear().commit()
         AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("en"))
-        
         MainViewModel.testingHidManager = FakeHidManager(fakeService)
     }
 
@@ -55,10 +67,8 @@ class MainActivityPermissionTest {
     @Test
     fun testPermissionDenialGracefulFailure() {
         ActivityScenario.launch(MainActivity::class.java).use {
-            // Trigger permission request
             onView(withId(R.id.statusBtn)).perform(click())
 
-            // Wait for dialog
             val permissionDialog = device.wait(Until.hasObject(By.textContains("Allow")), 3000)
             
             if (permissionDialog) {

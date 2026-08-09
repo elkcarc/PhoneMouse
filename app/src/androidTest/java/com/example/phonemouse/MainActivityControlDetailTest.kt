@@ -33,7 +33,8 @@ class MainActivityControlDetailTest {
     val grantPermissionRule: GrantPermissionRule = GrantPermissionRule.grant(
         Manifest.permission.BLUETOOTH_CONNECT,
         Manifest.permission.POST_NOTIFICATIONS,
-        Manifest.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE
+        Manifest.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE,
+        Manifest.permission.ACCESS_FINE_LOCATION
     )
 
     @Before
@@ -52,12 +53,6 @@ class MainActivityControlDetailTest {
         MainViewModel.testingHidManager = null
     }
 
-    /**
-     * Purpose: Verify that critical automation buttons are disabled when the app is not connected to a host.
-     * Expected Before State: App is launched with no Bluetooth host connected.
-     * Actions During Test: Observe the enabled state of Autoclicker, Record, and Playback buttons.
-     * Expected After State: Buttons are in the disabled (un-clickable) state.
-     */
     /**
      * Purpose: Verify that action buttons are disabled when the app is not connected to a host.
      * Before State: App launched, Bluetooth disconnected, zero permissions granted (mocked).

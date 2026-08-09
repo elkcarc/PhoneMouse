@@ -69,6 +69,7 @@
     <string name="mode_trackpoint">Trackpoint (Absoluto)</string>
     <string name="stop_mouse">Detener Ratón</string>
     <string name="connected_to">Conectado: %1$s</string>
+    <string name="connected_test_mode">Conectado: %1$s (MODO DE PRUEBA)</string>
     <string name="theme_auto">Automático</string>
     <string name="theme_dark">Oscuro</string>
     <string name="theme_light">Claro</string>

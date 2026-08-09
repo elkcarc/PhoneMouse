@@ -324,7 +324,11 @@ class MainActivity : AppCompatActivity() {
                 else -> Color.GRAY
             }
             backgroundTintList = ColorStateList.valueOf(statusColor)
-            text = if (s.isConnected && (s.connectedDeviceName != null)) getString(R.string.connected_to, s.connectedDeviceName) else getString(s.statusTextRes)
+            text = when {
+                s.isConnected && s.isTestMode && s.connectedDeviceName != null -> getString(R.string.connected_test_mode, s.connectedDeviceName)
+                s.isConnected && s.connectedDeviceName != null -> getString(R.string.connected_to, s.connectedDeviceName)
+                else -> getString(s.statusTextRes)
+            }
         }
         
         val typedVal = android.util.TypedValue()
