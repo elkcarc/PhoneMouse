@@ -77,4 +77,30 @@ class MainActivityInteractionTest {
             activity.findViewById<DrawerLayout>(R.id.drawerLayout).setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED)
         }
     }
+
+    @Test
+    fun testDragAndDropProfile() {
+        onView(withContentDescription("Open drawer")).perform(click())
+        Thread.sleep(500)
+        onView(withId(R.id.profilesBtn)).perform(click())
+        Thread.sleep(500)
+
+        // Ensure at least two items
+        onView(withId(R.id.addVariationBtn)).perform(click())
+        Thread.sleep(500)
+        onView(withId(R.id.editName)).perform(replaceText("Draggable Item"), closeSoftKeyboard())
+        onView(withText(R.string.save)).perform(click())
+        Thread.sleep(500)
+
+        // Perform drag on the handle (index 1 is our new item)
+        onView(withId(R.id.configsRecyclerView)).perform(
+            RecyclerViewActions.actionOnItemAtPosition<RecyclerView.ViewHolder>(
+                1,
+                GeneralSwipeAction(Swipe.SLOW, GeneralLocation.CENTER, GeneralLocation.TOP_CENTER, Press.FINGER)
+            )
+        )
+        Thread.sleep(1000)
+
+        onView(withText("Draggable Item")).check(matches(isDisplayed()))
+    }
 }

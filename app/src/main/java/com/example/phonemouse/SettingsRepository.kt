@@ -39,14 +39,14 @@ class SettingsRepository(context: Context) {
     private val _trackpointCurve = MutableStateFlow(value = p.getString("trackpoint_curve", "Linear") ?: "Linear")
     val trackpointCurve = _trackpointCurve.asStateFlow()
 
-    fun saveConfirmDelete(enabled: Boolean) { _confirmDelete.value = enabled; p.edit { putBoolean("confirm_delete", enabled) } }
-    fun saveTrailEnabled(e: Boolean) { _isTrailEnabled.value = e; p.edit { putBoolean("is_trail_enabled", e) } }
-    fun saveTrackpadSensitivity(v: Float) { val c = v.coerceIn(0.1f, 8.0f); _trackpadSensitivity.value = c; p.edit { putFloat("trackpad_sensitivity", c) } }
-    fun saveTrackpointSensitivity(v: Float) { val c = v.coerceIn(0.1f, 8.0f); _trackpointSensitivity.value = c; p.edit { putFloat("trackpoint_sensitivity", c) } }
-    fun saveTrackpointAnimationEnabled(e: Boolean) { _isTrackpointAnimationEnabled.value = e; p.edit { putBoolean("is_trackpoint_animation_enabled", e) } }
-    fun saveTrackpadMode(m: String) { _trackpadMode.value = m; p.edit { putString("trackpad_mode", m) } }
-    fun saveLanguage(l: String) { _appLanguage.value = l; p.edit { putString("app_language", l) } }
-    fun saveThemeMode(m: String) { _themeMode.value = m; p.edit { putString("theme_mode", m) } }
-    fun saveTrackpadAcceleration(v: Float) { _trackpadAcceleration.value = v; p.edit { putFloat("trackpad_acceleration", v) } }
-    fun saveTrackpointCurve(c: String) { _trackpointCurve.value = c; p.edit { putString("trackpoint_curve", c) } }
+    fun saveConfirmDelete(enabled: Boolean) { _confirmDelete.value = enabled; p.edit(commit = true) { putBoolean("confirm_delete", enabled) } }
+    fun saveTrailEnabled(e: Boolean) { _isTrailEnabled.value = e; p.edit(commit = true) { putBoolean("is_trail_enabled", e) } }
+    fun saveTrackpadSensitivity(v: Float) { val c = v.coerceIn(0.1f, 8.0f); _trackpadSensitivity.value = c; p.edit(commit = true) { putFloat("trackpad_sensitivity", c) } }
+    fun saveTrackpointSensitivity(v: Float) { val c = v.coerceIn(0.1f, 8.0f); _trackpointSensitivity.value = c; p.edit(commit = true) { putFloat("trackpoint_sensitivity", c) } }
+    fun saveTrackpointAnimationEnabled(e: Boolean) { _isTrackpointAnimationEnabled.value = e; p.edit(commit = true) { putBoolean("is_trackpoint_animation_enabled", e) } }
+    fun saveTrackpadMode(m: String) { _trackpadMode.value = m; p.edit(commit = true) { putString("trackpad_mode", m) } }
+    fun saveLanguage(l: String) { _appLanguage.value = l; p.edit(commit = true) { putString("app_language", l) } }
+    fun saveThemeMode(m: String) { _themeMode.value = m; p.edit(commit = true) { putString("theme_mode", m) } }
+    fun saveTrackpadAcceleration(v: Float) { _trackpadAcceleration.value = v; p.edit(commit = true) { putFloat("trackpad_acceleration", v) } }
+    fun saveTrackpointCurve(c: String) { _trackpointCurve.value = c; p.edit(commit = true) { putString("trackpoint_curve", c) } }
 }
