@@ -11,6 +11,7 @@ import android.provider.Settings
 import android.view.*
 import android.widget.*
 import androidx.activity.OnBackPressedCallback
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -34,6 +35,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var recordingAdapter: RecordingsAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
@@ -49,25 +51,28 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupBackNavigation() {
-        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
-            override fun handleOnBackPressed() {
-                val s = viewModel.uiState.value
-                when {
-                    binding.drawerLayout.isDrawerOpen(GravityCompat.START) -> {
-                        if (s.isSettingsVisible || s.activePanel != "Main") {
-                            viewModel.setSettingsVisible(false)
-                            viewModel.setActivePanel("Main")
-                        } else {
-                            binding.drawerLayout.closeDrawer(GravityCompat.START)
+        onBackPressedDispatcher.addCallback(
+            this,
+            object : OnBackPressedCallback(enabled = true) {
+                override fun handleOnBackPressed() {
+                    val s = viewModel.uiState.value
+                    when {
+                        binding.drawerLayout.isDrawerOpen(GravityCompat.START) -> {
+                            if (s.isSettingsVisible || (s.activePanel != "Main")) {
+                                viewModel.setSettingsVisible(v = false)
+                                viewModel.setActivePanel("Main")
+                            } else {
+                                binding.drawerLayout.closeDrawer(GravityCompat.START)
+                            }
                         }
-                    }
-                    else -> {
-                        isEnabled = false
-                        onBackPressedDispatcher.onBackPressed()
+                        else -> {
+                            isEnabled = false
+                            onBackPressedDispatcher.onBackPressed()
+                        }
                     }
                 }
             }
-        })
+        )
     }
 
     private fun setupUI() {
@@ -75,32 +80,28 @@ class MainActivity : AppCompatActivity() {
         binding.statusBtn.setOnClickListener { startActivity(Intent(Settings.ACTION_BLUETOOTH_SETTINGS)) }
         
         binding.autoclickerBtn.setOnClickListener { 
-            viewModel.setSettingsVisible(false)
-            viewModel.setActivePanel("Main")
             binding.drawerLayout.closeDrawer(GravityCompat.START)
             viewModel.toggleAutoclicker() 
         }
         binding.recordBtn.setOnClickListener { 
-            viewModel.setSettingsVisible(false)
-            viewModel.setActivePanel("Main")
             binding.drawerLayout.closeDrawer(GravityCompat.START)
             viewModel.toggleRecording() 
         }
         binding.playbackBtn.setOnClickListener { 
-            viewModel.setSettingsVisible(false)
-            viewModel.setActivePanel("Main")
             binding.drawerLayout.closeDrawer(GravityCompat.START)
             viewModel.togglePlayback() 
         }
 
         binding.trackpad.setOnMoveListener { dx, dy -> viewModel.mouseHidService.value?.sendManualMove(dx, dy) }
 
-        binding.drawerLayout.addDrawerListener(object : DrawerLayout.SimpleDrawerListener() {
-            override fun onDrawerClosed(drawerView: View) {
-                viewModel.setSettingsVisible(false)
-                viewModel.setActivePanel("Main")
+        binding.drawerLayout.addDrawerListener(
+            object : DrawerLayout.SimpleDrawerListener() {
+                override fun onDrawerClosed(drawerView: View) {
+                    viewModel.setSettingsVisible(v = false)
+                    viewModel.setActivePanel("Main")
+                }
             }
-        })
+        )
         
         setupMouseButtons()
         setupList()
@@ -156,7 +157,11 @@ class MainActivity : AppCompatActivity() {
             }
         })
         configTouchHelper.attachToRecyclerView(binding.navDrawerMain.configsRecyclerView)
-        configAdapter = ConfigsAdapter(emptyList<AutomationConfig>(), 0, { pos -> viewModel.selectConfig(pos); showEditProfileDialog(pos) }, { configTouchHelper.startDrag(it) })
+        configAdapter = ConfigsAdapter(
+            emptyList<AutomationConfig>(), 
+            0, 
+            { pos -> viewModel.selectConfig(pos); showEditProfileDialog(pos) }
+        ) { configTouchHelper.startDrag(it) }
         binding.navDrawerMain.configsRecyclerView.apply { layoutManager = LinearLayoutManager(this@MainActivity); adapter = configAdapter }
 
         // Input Recordings
@@ -172,7 +177,11 @@ class MainActivity : AppCompatActivity() {
             }
         })
         recordingTouchHelper.attachToRecyclerView(binding.navDrawerMain.recordingsRecyclerView)
-        recordingAdapter = RecordingsAdapter(emptyList<InputRecording>(), 0, { pos -> viewModel.selectRecording(pos); showEditRecordingDialog(pos) }, { recordingTouchHelper.startDrag(it) })
+        recordingAdapter = RecordingsAdapter(
+            emptyList<InputRecording>(), 
+            0, 
+            { pos -> viewModel.selectRecording(pos); showEditRecordingDialog(pos) }
+        ) { recordingTouchHelper.startDrag(it) }
         binding.navDrawerMain.recordingsRecyclerView.apply { layoutManager = LinearLayoutManager(this@MainActivity); adapter = recordingAdapter }
     }
 
@@ -213,7 +222,7 @@ class MainActivity : AppCompatActivity() {
                     val iconRight = itemView.right - iconMargin - (16 * resources.displayMetrics.density).toInt()
                     val iconLeft = iconRight - icon.intrinsicWidth
                     icon.setBounds(iconLeft, iconTop, iconRight, iconBottom)
-                    if (Math.abs(dX) > iconMargin + 16 * resources.displayMetrics.density) icon.draw(c)
+                    if (kotlin.math.abs(dX) > iconMargin + 16 * resources.displayMetrics.density) icon.draw(c)
                 }
             }
             super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive)
@@ -226,21 +235,36 @@ class MainActivity : AppCompatActivity() {
             .setPositiveButton(R.string.delete) { _, _ -> onConfirm() }.setNegativeButton(R.string.cancel, null).show()
     }
 
-    private fun showEditProfileDialog(index: Int) {
-        val cfg = viewModel.uiState.value.configs.getOrNull(index) ?: return
+    private fun showEditProfileDialog(index: Int?) {
+        val cfg = if (index != null) viewModel.uiState.value.configs.getOrNull(index) else null
+        val defaultName = if (index == null) viewModel.generateNextProfileName() else ""
+        
         val dialogView = layoutInflater.inflate(R.layout.dialog_edit_profile, null)
-        val nameInput = dialogView.findViewById<EditText>(R.id.editName).apply { setText(cfg.name) }
-        val minI = dialogView.findViewById<EditText>(R.id.editMinInt).apply { setText(cfg.minInterval.toString()) }
-        val maxI = dialogView.findViewById<EditText>(R.id.editMaxInt).apply { setText(cfg.maxInterval.toString()) }
-        val minP = dialogView.findViewById<EditText>(R.id.editMinPress).apply { setText(cfg.minPressDuration.toString()) }
-        val maxP = dialogView.findViewById<EditText>(R.id.editMaxPress).apply { setText(cfg.maxPressDuration.toString()) }
-        val minB = dialogView.findViewById<EditText>(R.id.editMinBreak).apply { setText(cfg.minBreakDelay.toString()) }
-        val maxB = dialogView.findViewById<EditText>(R.id.editMaxBreak).apply { setText(cfg.maxBreakDelay.toString()) }
-        val freq = dialogView.findViewById<EditText>(R.id.editFreq).apply { setText(cfg.delayFrequency.toString()) }
+        val nameInput = dialogView.findViewById<EditText>(R.id.editName).apply { setText(cfg?.name ?: defaultName) }
+        val minI = dialogView.findViewById<EditText>(R.id.editMinInt).apply { setText(cfg?.minInterval?.toString() ?: "100") }
+        val maxI = dialogView.findViewById<EditText>(R.id.editMaxInt).apply { setText(cfg?.maxInterval?.toString() ?: "300") }
+        val minP = dialogView.findViewById<EditText>(R.id.editMinPress).apply { setText(cfg?.minPressDuration?.toString() ?: "50") }
+        val maxP = dialogView.findViewById<EditText>(R.id.editMaxPress).apply { setText(cfg?.maxPressDuration?.toString() ?: "150") }
+        val minB = dialogView.findViewById<EditText>(R.id.editMinBreak).apply { setText(cfg?.minBreakDelay?.toString() ?: "3000") }
+        val maxB = dialogView.findViewById<EditText>(R.id.editMaxBreak).apply { setText(cfg?.maxBreakDelay?.toString() ?: "60000") }
+        val freq = dialogView.findViewById<EditText>(R.id.editFreq).apply { setText(cfg?.delayFrequency?.toString() ?: "500") }
 
-        AlertDialog.Builder(this).setTitle(R.string.edit_profile).setView(dialogView)
+        AlertDialog.Builder(this).setTitle(if (index == null) R.string.add_new_profile else R.string.edit_profile).setView(dialogView)
             .setPositiveButton(R.string.save) { _, _ ->
-                viewModel.updateConfig(index, nameInput.text.toString(), minI.text.toString().toIntOrNull() ?: 100, maxI.text.toString().toIntOrNull() ?: 300, minP.text.toString().toIntOrNull() ?: 50, maxP.text.toString().toIntOrNull() ?: 150, minB.text.toString().toIntOrNull() ?: 3000, maxB.text.toString().toIntOrNull() ?: 60000, freq.text.toString().toIntOrNull() ?: 500)
+                val name = nameInput.text.toString()
+                val mi = minI.text.toString().toIntOrNull() ?: 100
+                val ma = maxI.text.toString().toIntOrNull() ?: 300
+                val mp = minP.text.toString().toIntOrNull() ?: 50
+                val mpa = maxP.text.toString().toIntOrNull() ?: 150
+                val mb = minB.text.toString().toIntOrNull() ?: 3000
+                val mba = maxB.text.toString().toIntOrNull() ?: 60000
+                val f = freq.text.toString().toIntOrNull() ?: 500
+                
+                if (index != null) {
+                    viewModel.updateConfig(index, name, mi, ma, mp, mpa, mb, mba, f)
+                } else {
+                    viewModel.addConfig(name, mi, ma, mp, mpa, mb, mba, f)
+                }
             }.setNegativeButton(R.string.cancel, null).show()
     }
 
@@ -277,13 +301,12 @@ class MainActivity : AppCompatActivity() {
             trackpointAnimationToggle.setOnCheckedChangeListener { _, c -> viewModel.setTrackpointAnimationEnabled(c) }
             confirmDeleteToggle.setOnCheckedChangeListener { _, c -> viewModel.setConfirmDelete(c) }
             trackpadSensitivitySlider.addOnChangeListener { _, v, f -> if (f) viewModel.setTrackpadSensitivity(v) }
+            trackpadAccelerationSlider.addOnChangeListener { _, v, f -> if (f) viewModel.setTrackpadAcceleration(v) }
             trackpointSensitivitySlider.addOnChangeListener { _, v, f -> if (f) viewModel.setTrackpointSensitivity(v) }
+            trackpointCurveDropdown.setOnItemClickListener { _, _, p, _ -> viewModel.setTrackpointCurve(arrayOf("Linear", "Quadratic", "Cubic")[p]) }
         }
         binding.navDrawerMain.apply {
-            addVariationBtn.setOnClickListener { 
-                viewModel.addConfig("Autoclicker Profile", 100, 300, 50, 150, 3000, 60000, 500)
-                showEditProfileDialog(configAdapter.itemCount - 1)
-            }
+            addVariationBtn.setOnClickListener { showEditProfileDialog(index = null) }
         }
     }
 
@@ -298,6 +321,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun render(s: MainUiState) {
+        if (!::configAdapter.isInitialized || !::recordingAdapter.isInitialized) return
+        
         binding.navDrawerMain.root.isVisible = !s.isSettingsVisible
         binding.navDrawerSettings.root.isVisible = s.isSettingsVisible
         if (s.isSettingsVisible && !binding.drawerLayout.isDrawerOpen(GravityCompat.START)) binding.drawerLayout.openDrawer(GravityCompat.START, false)
@@ -343,7 +368,8 @@ class MainActivity : AppCompatActivity() {
         }
 
         binding.trackpad.apply {
-            mode = s.trackpadMode; trackpadSensitivity = s.trackpadSensitivity; trackpointSensitivity = s.trackpointSensitivity
+            mode = s.trackpadMode; trackpadSensitivity = s.trackpadSensitivity; trackpadAcceleration = s.trackpadAcceleration
+            trackpointSensitivity = s.trackpointSensitivity; trackpointCurve = s.trackpointCurve
             isTrailEnabled = s.isTrackpadMode && s.isTrailEnabled; isTrackpointAnimationEnabled = (!s.isTrackpadMode) && s.isTrackpointAnimationEnabled
         }
 
@@ -357,10 +383,17 @@ class MainActivity : AppCompatActivity() {
             trackpadSensitivityValueText.text = String.format(java.util.Locale.US, "%.1fx", s.trackpadSensitivity)
             trackpadSensitivityLabel.text = getString(R.string.trackpad_sensitivity)
 
+            trackpadAccelerationSlider.isEnabled = s.isTrackpadSensitivityControlEnabled; trackpadAccelerationCard.alpha = s.trackpadSettingsAlpha
+            if (trackpadAccelerationSlider.value != s.trackpadAcceleration) trackpadAccelerationSlider.value = s.trackpadAcceleration
+            trackpadAccelerationValueText.text = String.format(java.util.Locale.US, "%.1fx", s.trackpadAcceleration)
+
             trackpointSensitivitySlider.isEnabled = s.isTrackpointSensitivityControlEnabled; trackpointSensitivityCard.alpha = s.trackpointSettingsAlpha
             if (trackpointSensitivitySlider.value != s.trackpointSensitivity) trackpointSensitivitySlider.value = s.trackpointSensitivity
             trackpointSensitivityValueText.text = String.format(java.util.Locale.US, "%.1fx", s.trackpointSensitivity)
             trackpointSensitivityLabel.text = getString(R.string.trackpoint_sensitivity)
+            
+            trackpointCurveCard.alpha = s.trackpointSettingsAlpha
+            setupSpinner(trackpointCurveDropdown, arrayOf(getString(R.string.curve_linear), getString(R.string.curve_quadratic), getString(R.string.curve_cubic)), arrayOf("Linear", "Quadratic", "Cubic").indexOf(s.trackpointCurve))
 
             trailToggle.isEnabled = s.isTrackpadTrailControlEnabled; trackpadTrailCard.alpha = s.trackpadSettingsAlpha
             if (trailToggle.isChecked != s.isTrailEnabled) trailToggle.isChecked = s.isTrailEnabled
@@ -408,7 +441,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onRequestPermissionsResult(rc: Int, p: Array<out String>, gr: IntArray) {
         super.onRequestPermissionsResult(rc, p, gr)
-        if (rc == BluetoothPermissionManager.REQUEST_CODE_BLUETOOTH_PERMISSIONS && (gr.all { it == android.content.pm.PackageManager.PERMISSION_GRANTED })) {
+        if ((rc == BluetoothPermissionManager.REQUEST_CODE_BLUETOOTH_PERMISSIONS) && (gr.all { it == android.content.pm.PackageManager.PERMISSION_GRANTED })) {
             viewModel.mouseHidService.value?.registerProfile()
         }
     }

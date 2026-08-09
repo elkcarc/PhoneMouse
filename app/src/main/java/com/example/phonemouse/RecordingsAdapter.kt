@@ -1,7 +1,6 @@
 package com.example.phonemouse
 
 import android.annotation.SuppressLint
-import android.graphics.Color
 import android.text.format.DateFormat
 import android.view.*
 import androidx.recyclerview.widget.DiffUtil
@@ -20,12 +19,14 @@ class RecordingsAdapter(
 
     /** Synchronizes the list content and selection state. */
     fun update(newList: List<InputRecording>, newSelected: Int) {
-        val diff = DiffUtil.calculateDiff(object : DiffUtil.Callback() {
-            override fun getOldListSize() = list.size
-            override fun getNewListSize() = newList.size
-            override fun areItemsTheSame(o: Int, n: Int) = list[o].timestamp == newList[n].timestamp
-            override fun areContentsTheSame(o: Int, n: Int) = list[o] == newList[n]
-        })
+        val diff = DiffUtil.calculateDiff(
+            object : DiffUtil.Callback() {
+                override fun getOldListSize() = list.size
+                override fun getNewListSize() = newList.size
+                override fun areItemsTheSame(o: Int, n: Int) = list[o].timestamp == newList[n].timestamp
+                override fun areContentsTheSame(o: Int, n: Int) = list[o] == newList[n]
+            },
+        )
         list = newList
         selectedIndex = newSelected
         diff.dispatchUpdatesTo(this)
@@ -45,10 +46,10 @@ class RecordingsAdapter(
         ctx.theme.resolveAttribute(R.attr.trackpadBackgroundColor, tvTrackpad, true)
         
         val tvPrimary = android.util.TypedValue()
-        ctx.theme.resolveAttribute(com.google.android.material.R.attr.colorPrimary, tvPrimary, true)
+        ctx.theme.resolveAttribute(MaterialR.attr.colorPrimary, tvPrimary, true)
         
         val tvOnPrimary = android.util.TypedValue()
-        ctx.theme.resolveAttribute(com.google.android.material.R.attr.colorOnPrimary, tvOnPrimary, true)
+        ctx.theme.resolveAttribute(MaterialR.attr.colorOnPrimary, tvOnPrimary, true)
         
         val tvTextPrimary = android.util.TypedValue()
         ctx.theme.resolveAttribute(android.R.attr.textColorPrimary, tvTextPrimary, true)

@@ -49,10 +49,18 @@ class AutomationRepository(context: Context) {
     private val _themeMode = MutableStateFlow(value = "Auto")
     val themeMode = _themeMode.asStateFlow()
 
+    private val _trackpadAcceleration = MutableStateFlow(value = 1.0f)
+    /** Exponent for velocity-based acceleration. */
+    val trackpadAcceleration = _trackpadAcceleration.asStateFlow()
+
+    private val _trackpointCurve = MutableStateFlow(value = "Linear")
+    /** Response curve for trackpoint: Linear, Quadratic, Cubic. */
+    val trackpointCurve = _trackpointCurve.asStateFlow()
+
     init {
         val s = p.getString("configs", "") ?: ""
         _configs.value = if (s.isEmpty()) {
-            listOf(AutomationConfig("Default Profile", 100, 300, 50, 150, 3000, 60000, 500))
+            listOf(AutomationConfig("Profile 1", 100, 300, 50, 150, 3000, 60000, 500))
         } else s.split("|||").mapNotNull { AutomationConfig.fromJson(it) }
         _selectedIndex.value = p.getInt("selected_config_index", 0)
         
@@ -68,6 +76,8 @@ class AutomationRepository(context: Context) {
         _trackpadMode.value = p.getString("trackpad_mode", "Trackpad") ?: "Trackpad"
         _appLanguage.value = p.getString("app_language", "en") ?: "en"
         _themeMode.value = p.getString("theme_mode", "Auto") ?: "Auto"
+        _trackpadAcceleration.value = p.getFloat("trackpad_acceleration", 1.0f)
+        _trackpointCurve.value = p.getString("trackpoint_curve", "Linear") ?: "Linear"
     }
 
     /** Serializes and persists the list of autoclicker profiles. */
@@ -92,6 +102,9 @@ class AutomationRepository(context: Context) {
     fun saveTrackpadMode(m: String) { _trackpadMode.value = m; p.edit { putString("trackpad_mode", m) } }
     fun saveLanguage(l: String) { _appLanguage.value = l; p.edit { putString("app_language", l) } }
     fun saveThemeMode(m: String) { _themeMode.value = m; p.edit { putString("theme_mode", m) } }
+    
+    fun saveTrackpadAcceleration(v: Float) { _trackpadAcceleration.value = v; p.edit { putFloat("trackpad_acceleration", v) } }
+    fun saveTrackpointCurve(c: String) { _trackpointCurve.value = c; p.edit { putString("trackpoint_curve", c) } }
     
     /** Retrieves the currently active profile. */
     fun getActiveConfig() = _configs.value.getOrNull(_selectedIndex.value)

@@ -57,7 +57,12 @@
     <string name="default_max_break">60000</string>
     <string name="trackpad_trail">След тачпада</string>
     <string name="trackpad_sensitivity">Чувствительность тачпада</string>
+    <string name="trackpad_acceleration">Ускорение тачпада</string>
     <string name="trackpoint_sensitivity">Чувствительность трекпоинта</string>
+    <string name="trackpoint_curve">Кривая трекпоинта</string>
+    <string name="curve_linear">Линейная</string>
+    <string name="curve_quadratic">Квадратичная</string>
+    <string name="curve_cubic">Кубическая</string>
     <string name="trackpoint_animation">Анимация трекпоинта</string>
     <string name="trackpad_mode">Режим тачпада</string>
     <string name="mode_trackpad">Тачпад (Относительный)</string>

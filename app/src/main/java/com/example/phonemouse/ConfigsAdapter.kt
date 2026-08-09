@@ -1,11 +1,9 @@
 package com.example.phonemouse
 
 import android.annotation.SuppressLint
-import android.graphics.Color
 import android.view.*
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.DiffUtil
-import com.example.phonemouse.R
 import com.example.phonemouse.databinding.ItemConfigBinding
 
 /** Manages the display and user interaction for the list of autoclicker profiles. */
@@ -18,12 +16,14 @@ class ConfigsAdapter(
 
     /** Synchronizes the list content and selection state. */
     fun update(newList: List<AutomationConfig>, newSelected: Int) {
-        val diff = DiffUtil.calculateDiff(object : DiffUtil.Callback() {
-            override fun getOldListSize() = list.size
-            override fun getNewListSize() = newList.size
-            override fun areItemsTheSame(o: Int, n: Int) = list[o].toJson() == newList[n].toJson()
-            override fun areContentsTheSame(o: Int, n: Int) = list[o] == newList[n]
-        })
+        val diff = DiffUtil.calculateDiff(
+            object : DiffUtil.Callback() {
+                override fun getOldListSize() = list.size
+                override fun getNewListSize() = newList.size
+                override fun areItemsTheSame(o: Int, n: Int) = list[o].toJson() == newList[n].toJson()
+                override fun areContentsTheSame(o: Int, n: Int) = list[o] == newList[n]
+            },
+        )
         list = newList
         selectedIndex = newSelected
         diff.dispatchUpdatesTo(this)
@@ -68,11 +68,16 @@ class ConfigsAdapter(
         h.binding.dragHandle.imageTintList = android.content.res.ColorStateList.valueOf(contentColor)
         
         h.binding.configName.text = cfg.name
-        h.binding.configText.text = ctx.getString(R.string.config_format, 
-            cfg.minInterval.toString(), cfg.maxInterval.toString(), 
-            cfg.minPressDuration.toString(), cfg.maxPressDuration.toString(), 
-            cfg.minBreakDelay.toString(), cfg.maxBreakDelay.toString(), 
-            cfg.delayFrequency.toString())
+        h.binding.configText.text = ctx.getString(
+            R.string.config_format,
+            cfg.minInterval.toString(),
+            cfg.maxInterval.toString(),
+            cfg.minPressDuration.toString(),
+            cfg.maxPressDuration.toString(),
+            cfg.minBreakDelay.toString(),
+            cfg.maxBreakDelay.toString(),
+            cfg.delayFrequency.toString(),
+        )
         
         h.binding.dragHandle.setOnTouchListener { v, e -> if (e.action == MotionEvent.ACTION_DOWN) { v.performClick(); onDrag(h) }; false }
         h.binding.root.setOnClickListener { onClick(h.adapterPosition) }

@@ -19,11 +19,11 @@ class MouseHidService(private val context: Context) {
     private val random = Random()
     private var config: AutomationConfig? = null
 
-    private val _isConnected = MutableStateFlow(false)
+    private val _isConnected = MutableStateFlow(value = false)
     val isConnected = _isConnected.asStateFlow()
     private val _deviceName = MutableStateFlow<String?>(null)
     val connectedDeviceName = _deviceName.asStateFlow()
-    private val _isAutoRunning = MutableStateFlow(false)
+    private val _isAutoRunning = MutableStateFlow(value = false)
     val isAutomationRunning = _isAutoRunning.asStateFlow()
 
     // Recording & Playback
@@ -72,13 +72,17 @@ class MouseHidService(private val context: Context) {
     @Suppress("DEPRECATION")
     fun registerProfile() {
         if (isRegistered) return
-        BluetoothAdapter.getDefaultAdapter()?.getProfileProxy(context, object : BluetoothProfile.ServiceListener {
-            override fun onServiceConnected(p: Int, proxy: BluetoothProfile) {
-                hid = proxy as BluetoothHidDevice
-                hid?.registerApp(BluetoothHidDeviceAppSdpSettings("Optical Mouse", "Mouse", "Logitech", BluetoothHidDevice.SUBCLASS1_MOUSE, descriptor), null, null, Executors.newSingleThreadExecutor(), callback)
-            }
-            override fun onServiceDisconnected(p: Int) { hid = null; isRegistered = false }
-        }, BluetoothProfile.HID_DEVICE)
+        BluetoothAdapter.getDefaultAdapter()?.getProfileProxy(
+            context,
+            object : BluetoothProfile.ServiceListener {
+                override fun onServiceConnected(p: Int, proxy: BluetoothProfile) {
+                    hid = proxy as BluetoothHidDevice
+                    hid?.registerApp(BluetoothHidDeviceAppSdpSettings("Optical Mouse", "Mouse", "Logitech", BluetoothHidDevice.SUBCLASS1_MOUSE, descriptor), null, null, Executors.newSingleThreadExecutor(), callback)
+                }
+                override fun onServiceDisconnected(p: Int) { hid = null; isRegistered = false }
+            },
+            BluetoothProfile.HID_DEVICE,
+        )
     }
 
     @SuppressLint("MissingPermission")
@@ -120,7 +124,7 @@ class MouseHidService(private val context: Context) {
     }
 
     private fun startPlayback(data: String?, loop: Boolean) {
-        if (data.isNullOrEmpty() || host == null) return
+        if (data.isNullOrEmpty() || (host == null)) return
         val events = data.split(";").mapNotNull {
             try {
                 val parts = it.split(":")
@@ -140,11 +144,14 @@ class MouseHidService(private val context: Context) {
                 }, event.first)
             }
             val totalDuration = events.last().first
-            handler.postDelayed({
-                if (_isPlaying.value) {
-                    if (loop) runEvents() else _isPlaying.value = false
-                }
-            }, totalDuration + 100)
+            handler.postDelayed(
+                {
+                    if (_isPlaying.value) {
+                        if (loop) runEvents() else _isPlaying.value = false
+                    }
+                },
+                totalDuration + 100,
+            )
         }
         runEvents()
     }
@@ -184,7 +191,7 @@ class MouseHidService(private val context: Context) {
 
     private fun gaussian(m: Float, s: Float): Int {
         var u1: Float; do { u1 = random.nextFloat() } while (u1 == 0f)
-        return (m + sqrt(-2.0 * ln(u1.toDouble())).toFloat() * cos(2.0 * Math.PI * random.nextFloat()).toFloat() * s).toInt().coerceAtLeast(10)
+        return (m + (sqrt(-2.0 * ln(u1.toDouble())).toFloat() * cos(2.0 * Math.PI * random.nextFloat()).toFloat() * s)).toInt().coerceAtLeast(10)
     }
 
     private val autoRunnable = object : Runnable {

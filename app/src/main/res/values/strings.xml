@@ -57,7 +57,12 @@
     <string name="default_max_break">60000</string>
     <string name="trackpad_trail">Trackpad Trail</string>
     <string name="trackpad_sensitivity">Trackpad Sensitivity</string>
+    <string name="trackpad_acceleration">Trackpad Acceleration</string>
     <string name="trackpoint_sensitivity">Trackpoint Sensitivity</string>
+    <string name="trackpoint_curve">Trackpoint Curve</string>
+    <string name="curve_linear">Linear</string>
+    <string name="curve_quadratic">Quadratic</string>
+    <string name="curve_cubic">Cubic</string>
     <string name="trackpoint_animation">Trackpoint Animation</string>
     <string name="trackpad_mode">Trackpad Mode</string>
     <string name="mode_trackpad">Trackpad (Relative)</string>

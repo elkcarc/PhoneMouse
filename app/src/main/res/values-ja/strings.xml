@@ -57,7 +57,12 @@
     <string name="default_max_break">60000</string>
     <string name="trackpad_trail">トラックパッドの軌跡</string>
     <string name="trackpad_sensitivity">トラックパッドの感度</string>
+    <string name="trackpad_acceleration">トラックパッドの加速</string>
     <string name="trackpoint_sensitivity">トラックポイントの感度</string>
+    <string name="trackpoint_curve">トラックポイントの曲線</string>
+    <string name="curve_linear">線形</string>
+    <string name="curve_quadratic">二次</string>
+    <string name="curve_cubic">三次</string>
     <string name="trackpoint_animation">トラックポイントのアニメーション</string>
     <string name="trackpad_mode">操作モード</string>
     <string name="mode_trackpad">トラックパッド (相対)</string>

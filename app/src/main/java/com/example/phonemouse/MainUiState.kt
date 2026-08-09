@@ -20,7 +20,9 @@ data class MainUiState(
     val trackpadMode: String = "Trackpad",
     val isTrailEnabled: Boolean = true,
     val trackpadSensitivity: Float = 3.0f,
+    val trackpadAcceleration: Float = 1.0f,
     val trackpointSensitivity: Float = 1.5f,
+    val trackpointCurve: String = "Linear",
     val isTrackpointAnimationEnabled: Boolean = true,
 ) {
     val statusTextRes = if (isConnected) R.string.connected else R.string.disconnected_tap_to_open_bluetooth_settings

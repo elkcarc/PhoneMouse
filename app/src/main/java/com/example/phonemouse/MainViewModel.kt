@@ -15,14 +15,27 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     @OptIn(ExperimentalCoroutinesApi::class)
     val uiState = combine(
-        mouseHidService.flatMapLatest { it?.isConnected ?: flowOf(false) },
-        mouseHidService.flatMapLatest { it?.connectedDeviceName ?: flowOf(null) },
-        mouseHidService.flatMapLatest { it?.isAutomationRunning ?: flowOf(false) },
-        mouseHidService.flatMapLatest { it?.isRecording ?: flowOf(false) },
-        mouseHidService.flatMapLatest { it?.isPlaying ?: flowOf(false) },
-        repo.recordings, repo.selectedRecordingIndex,
-        repo.configs, repo.selectedIndex, repo.confirmDelete, repo.appLanguage, repo.themeMode, _isSettingsVisible, _activePanel,
-        repo.trackpadMode, repo.isTrailEnabled, repo.trackpadSensitivity, repo.trackpointSensitivity, repo.isTrackpointAnimationEnabled
+        mouseHidService.flatMapLatest { it?.isConnected ?: flowOf(value = false) },
+        mouseHidService.flatMapLatest { it?.connectedDeviceName ?: flowOf(value = null) },
+        mouseHidService.flatMapLatest { it?.isAutomationRunning ?: flowOf(value = false) },
+        mouseHidService.flatMapLatest { it?.isRecording ?: flowOf(value = false) },
+        mouseHidService.flatMapLatest { it?.isPlaying ?: flowOf(value = false) },
+        repo.recordings,
+        repo.selectedRecordingIndex,
+        repo.configs,
+        repo.selectedIndex,
+        repo.confirmDelete,
+        repo.appLanguage,
+        repo.themeMode,
+        _isSettingsVisible,
+        _activePanel,
+        repo.trackpadMode,
+        repo.isTrailEnabled,
+        repo.trackpadSensitivity,
+        repo.trackpadAcceleration,
+        repo.trackpointSensitivity,
+        repo.trackpointCurve,
+        repo.isTrackpointAnimationEnabled,
     ) { p ->
         @Suppress("UNCHECKED_CAST")
         MainUiState(
@@ -44,8 +57,10 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             trackpadMode = p[14] as String,
             isTrailEnabled = p[15] as Boolean,
             trackpadSensitivity = p[16] as Float,
-            trackpointSensitivity = p[17] as Float,
-            isTrackpointAnimationEnabled = p[18] as Boolean
+            trackpadAcceleration = p[17] as Float,
+            trackpointSensitivity = p[18] as Float,
+            trackpointCurve = p[19] as String,
+            isTrackpointAnimationEnabled = p[20] as Boolean,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), MainUiState())
 
@@ -78,6 +93,15 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     /** Autoclicker management. */
     fun toggleAutoclicker() = mouseHidService.value?.toggleAutomation()
     fun selectConfig(index: Int) { repo.saveSelectedIndex(index); mouseHidService.value?.setConfig(repo.getActiveConfig()) }
+
+    /** Generates a unique default name for a new profile. */
+    fun generateNextProfileName(): String {
+        val existingNames = repo.configs.value.map { it.name }
+        var i = 1
+        while (existingNames.contains("Profile $i")) { i++ }
+        return "Profile $i"
+    }
+
     fun addConfig(name: String, minI: Int, maxI: Int, minP: Int, maxP: Int, minB: Int, maxB: Int, freq: Int) {
         val newList = repo.configs.value.toMutableList().apply { 
             add(AutomationConfig(name, minI, maxI, minP, maxP, minB, maxB, freq)) 
@@ -104,7 +128,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     }
     fun moveConfig(from: Int, to: Int) {
         val newList = repo.configs.value.toMutableList()
-        if (from in newList.indices && to in newList.indices) {
+        if ((from in newList.indices) && (to in newList.indices)) {
             newList.add(to, newList.removeAt(from))
             val cur = repo.selectedIndex.value
             val next = when (cur) { from -> to; in (from + 1)..to -> cur - 1; in to until from -> cur + 1; else -> cur }
@@ -146,7 +170,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     }
     fun moveRecording(from: Int, to: Int) {
         val newList = repo.recordings.value.toMutableList()
-        if (from in newList.indices && to in newList.indices) {
+        if ((from in newList.indices) && (to in newList.indices)) {
             newList.add(to, newList.removeAt(from))
             val cur = repo.selectedRecordingIndex.value
             val next = when (cur) { from -> to; in (from + 1)..to -> cur - 1; in to until from -> cur + 1; else -> cur }
@@ -162,7 +186,9 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     fun setTrackpadMode(m: String) = repo.saveTrackpadMode(m)
     fun setTrailEnabled(e: Boolean) = repo.saveTrailEnabled(e)
     fun setTrackpadSensitivity(v: Float) = repo.saveTrackpadSensitivity(v)
+    fun setTrackpadAcceleration(v: Float) = repo.saveTrackpadAcceleration(v)
     fun setTrackpointSensitivity(v: Float) = repo.saveTrackpointSensitivity(v)
+    fun setTrackpointCurve(c: String) = repo.saveTrackpointCurve(c)
     fun setTrackpointAnimationEnabled(e: Boolean) = repo.saveTrackpointAnimationEnabled(e)
 
     override fun onCleared() { super.onCleared(); hid.unbind() }
