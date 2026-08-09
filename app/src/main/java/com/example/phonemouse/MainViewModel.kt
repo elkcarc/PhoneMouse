@@ -6,9 +6,11 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 
 /** UI State owner. Orchestrates repository data and service events into a unified state stream. */
-class MainViewModel(app: Application) : AndroidViewModel(app) {
-    private val repo = AutomationRepository(app)
-    private val hid = HidServiceManager(app)
+class MainViewModel @JvmOverloads constructor(
+    app: Application,
+    private val repo: AutomationRepository = AutomationRepository(app),
+    private val hid: HidServiceManager = HidServiceManager(app)
+) : AndroidViewModel(app) {
     private val _isSettingsVisible = MutableStateFlow(value = false)
     private val _activePanel = MutableStateFlow(value = "Main")
     val mouseHidService = hid.mouseHidService
@@ -65,7 +67,6 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), MainUiState())
 
     init {
-        hid.startAndBind()
         viewModelScope.launch { 
             mouseHidService.collectLatest { service ->
                 service?.setConfig(repo.getActiveConfig())
@@ -84,6 +85,11 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 }
             }
         }
+    }
+
+    /** Starts the Bluetooth HID service. Should be called after permissions are granted. */
+    fun startService() {
+        hid.startAndBind()
     }
 
     /** Navigation and panel management. */
@@ -121,8 +127,11 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         if (index in newList.indices) {
             newList.removeAt(index)
             repo.saveConfigs(newList)
-            val currentSelected = repo.selectedIndex.value
-            repo.saveSelectedIndex(if (newList.isEmpty()) 0 else if (currentSelected >= newList.size) newList.size - 1 else currentSelected)
+            val next = when (val cur = repo.selectedIndex.value) {
+                0 -> 0
+                else -> if (cur >= newList.size) newList.size - 1 else cur
+            }
+            repo.saveSelectedIndex(next)
             mouseHidService.value?.setConfig(repo.getActiveConfig())
         }
     }

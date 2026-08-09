@@ -10,12 +10,21 @@ import kotlin.math.*
 import android.annotation.SuppressLint
 
 /** Core logic for Bluetooth HID communication. Acts as a virtual mouse peripheral. */
-class MouseHidService(private val context: Context) {
-    private var hid: BluetoothHidDevice? = null
+class MouseHidService(
+    private val context: Context,
+    private var hid: BluetoothHidDevice? = null,
+    private val handler: Handler = Handler(Looper.getMainLooper())
+) {
     private var isRegistered = false
     private var host: BluetoothDevice? = null
+
+    /** Internal for testing. Simulates a host connection. */
+    fun setTestHost(device: BluetoothDevice?) {
+        host = device
+        _isConnected.value = device != null
+    }
+
     private var btnState: Byte = 0
-    private val handler = Handler(Looper.getMainLooper())
     private val random = Random()
     private var config: AutomationConfig? = null
 

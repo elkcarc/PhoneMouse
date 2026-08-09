@@ -22,5 +22,6 @@
         <item name="controlBackgroundColor">#CCCCCC</item>
         <item name="controlIconColor">@android:color/black</item>
         <item name="controlTextColor">@android:color/black</item>
+        <item name="colorOutline">#DDDDDD</item>
     </style>
 </resources>

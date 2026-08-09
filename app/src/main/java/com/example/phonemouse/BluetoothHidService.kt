@@ -3,6 +3,7 @@ package com.example.phonemouse
 import android.app.*
 import android.content.Intent
 import android.os.*
+import android.content.pm.ServiceInfo
 import androidx.core.app.NotificationCompat
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.collectLatest
@@ -29,7 +30,13 @@ class BluetoothHidService : Service() {
         mouseHidService = MouseHidService(this)
         val nm = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
         nm.createNotificationChannel(NotificationChannel(CHANNEL_ID, getString(R.string.foreground_service_notification_title), NotificationManager.IMPORTANCE_LOW))
-        startForeground(NOTIFICATION_ID, buildNotification(null))
+        
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            startForeground(NOTIFICATION_ID, buildNotification(null), ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE)
+        } else {
+            startForeground(NOTIFICATION_ID, buildNotification(null))
+        }
+        
         mouseHidService.registerProfile()
         serviceScope.launch { mouseHidService.connectedDeviceName.collectLatest { updateNotification(it) } }
     }

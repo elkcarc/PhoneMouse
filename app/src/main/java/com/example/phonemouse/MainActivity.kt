@@ -46,7 +46,12 @@ class MainActivity : AppCompatActivity() {
                 viewModel.uiState.collectLatest { render(it) } 
             } 
         }
-        if (!perms.isBluetoothEnabled()) perms.requestBluetoothEnable()
+        if (perms.hasPermissions()) {
+            if (perms.isBluetoothEnabled()) viewModel.startService()
+            else perms.requestBluetoothEnable()
+        } else {
+            perms.requestPermissions()
+        }
         setupInsets()
     }
 
@@ -349,21 +354,24 @@ class MainActivity : AppCompatActivity() {
         binding.autoclickerBtn.apply {
             isEnabled = s.isConnected && !s.isRecording && !s.isPlaying
             setIconResource(if (s.isAutoclickerRunning) R.drawable.ic_stop_circle else R.drawable.ic_autoplay)
-            iconTint = ColorStateList.valueOf(if (s.isAutoclickerRunning) Color.RED else defaultIconColor)
+            val iconColor = if (s.isAutoclickerRunning) Color.WHITE else defaultIconColor
+            iconTint = ColorStateList.valueOf(iconColor)
             backgroundTintList = ColorStateList.valueOf(if (s.isAutoclickerRunning) Color.RED else defaultBgColor).withAlpha(if (isEnabled) 255 else 128)
         }
         
         binding.recordBtn.apply {
             isEnabled = s.isConnected && !s.isAutoclickerRunning && !s.isPlaying
             setIconResource(if (s.isRecording) R.drawable.ic_stop_circle else R.drawable.ic_screen_record)
-            iconTint = ColorStateList.valueOf(if (s.isRecording) Color.RED else defaultIconColor)
+            val iconColor = if (s.isRecording) Color.WHITE else defaultIconColor
+            iconTint = ColorStateList.valueOf(iconColor)
             backgroundTintList = ColorStateList.valueOf(if (s.isRecording) Color.RED else defaultBgColor).withAlpha(if (isEnabled) 255 else 128)
         }
         
         binding.playbackBtn.apply {
             isEnabled = s.isConnected && s.hasRecording && !s.isAutoclickerRunning && !s.isRecording
             setIconResource(if (s.isPlaying) R.drawable.ic_stop_circle else R.drawable.ic_play_circle)
-            iconTint = ColorStateList.valueOf(if (s.isPlaying) Color.RED else defaultIconColor)
+            val iconColor = if (s.isPlaying) Color.WHITE else defaultIconColor
+            iconTint = ColorStateList.valueOf(iconColor)
             backgroundTintList = ColorStateList.valueOf(if (s.isPlaying) Color.RED else defaultBgColor).withAlpha(if (isEnabled) 255 else 128)
         }
 
@@ -442,7 +450,8 @@ class MainActivity : AppCompatActivity() {
     override fun onRequestPermissionsResult(rc: Int, p: Array<out String>, gr: IntArray) {
         super.onRequestPermissionsResult(rc, p, gr)
         if ((rc == BluetoothPermissionManager.REQUEST_CODE_BLUETOOTH_PERMISSIONS) && (gr.all { it == android.content.pm.PackageManager.PERMISSION_GRANTED })) {
-            viewModel.mouseHidService.value?.registerProfile()
+            if (perms.isBluetoothEnabled()) viewModel.startService()
+            else perms.requestBluetoothEnable()
         }
     }
 }

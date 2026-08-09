@@ -39,7 +39,7 @@ class TrackpadManager(
 
     /** Precison frame callback for continuous Trackpoint movement. */
     override fun doFrame(frameTimeNanos: Long) {
-        if (mode == "Trackpoint" && pointerId != MotionEvent.INVALID_POINTER_ID) {
+        if ((mode == "Trackpoint") && (pointerId != MotionEvent.INVALID_POINTER_ID)) {
             val cx = viewWidth / 2f
             val cy = viewHeight / 2f
             
@@ -131,9 +131,10 @@ class TrackpadManager(
                             
                             if (outX != 0 || outY != 0) {
                                 onMove(outX, outY)
-                                remX = moveX - outX
-                                remY = moveY - outY
                             }
+                            remX = moveX - outX
+                            remY = moveY - outY
+                            
                             lx = x
                             ly = y
                         } else {
