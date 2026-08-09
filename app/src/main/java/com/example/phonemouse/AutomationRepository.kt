@@ -2,9 +2,10 @@ package com.example.phonemouse
 
 import android.content.Context
 import androidx.core.content.edit
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
-/** Manages persistent storage for all user settings, profiles, and recordings. */
+/** Manages persistent storage for all user profiles and input recordings. */
 class AutomationRepository(context: Context) {
     private val p = context.getSharedPreferences("PhoneMousePrefs", Context.MODE_PRIVATE)
 
@@ -24,39 +25,6 @@ class AutomationRepository(context: Context) {
     /** Index of the recording currently selected for playback. */
     val selectedRecordingIndex = _selectedRecordingIndex.asStateFlow()
 
-    private val _confirmDelete = MutableStateFlow(value = true)
-    /** User preference for deletion confirmation dialogs. */
-    val confirmDelete = _confirmDelete.asStateFlow()
-
-    private val _isTrailEnabled = MutableStateFlow(value = true)
-    val isTrailEnabled = _isTrailEnabled.asStateFlow()
-
-    private val _trackpadSensitivity = MutableStateFlow(value = 3.0f)
-    val trackpadSensitivity = _trackpadSensitivity.asStateFlow()
-
-    private val _trackpointSensitivity = MutableStateFlow(value = 1.5f)
-    val trackpointSensitivity = _trackpointSensitivity.asStateFlow()
-
-    private val _isTrackpointAnimationEnabled = MutableStateFlow(value = true)
-    val isTrackpointAnimationEnabled = _isTrackpointAnimationEnabled.asStateFlow()
-
-    private val _trackpadMode = MutableStateFlow(value = "Trackpad")
-    val trackpadMode = _trackpadMode.asStateFlow()
-
-    private val _appLanguage = MutableStateFlow(value = "en")
-    val appLanguage = _appLanguage.asStateFlow()
-
-    private val _themeMode = MutableStateFlow(value = "Auto")
-    val themeMode = _themeMode.asStateFlow()
-
-    private val _trackpadAcceleration = MutableStateFlow(value = 1.0f)
-    /** Exponent for velocity-based acceleration. */
-    val trackpadAcceleration = _trackpadAcceleration.asStateFlow()
-
-    private val _trackpointCurve = MutableStateFlow(value = "Linear")
-    /** Response curve for trackpoint: Linear, Quadratic, Cubic. */
-    val trackpointCurve = _trackpointCurve.asStateFlow()
-
     init {
         val s = p.getString("configs", "") ?: ""
         _configs.value = if (s.isEmpty()) {
@@ -67,17 +35,6 @@ class AutomationRepository(context: Context) {
         val r = p.getString("recordings", "") ?: ""
         _recordings.value = if (r.isEmpty()) emptyList() else r.split("|||").mapNotNull { InputRecording.fromJson(it) }
         _selectedRecordingIndex.value = p.getInt("selected_recording_index", 0)
-
-        _confirmDelete.value = p.getBoolean("confirm_delete", true)
-        _isTrailEnabled.value = p.getBoolean("is_trail_enabled", true)
-        _trackpadSensitivity.value = p.getFloat("trackpad_sensitivity", 3.0f)
-        _trackpointSensitivity.value = p.getFloat("trackpoint_sensitivity", 1.5f)
-        _isTrackpointAnimationEnabled.value = p.getBoolean("is_trackpoint_animation_enabled", true)
-        _trackpadMode.value = p.getString("trackpad_mode", "Trackpad") ?: "Trackpad"
-        _appLanguage.value = p.getString("app_language", "en") ?: "en"
-        _themeMode.value = p.getString("theme_mode", "Auto") ?: "Auto"
-        _trackpadAcceleration.value = p.getFloat("trackpad_acceleration", 1.0f)
-        _trackpointCurve.value = p.getString("trackpoint_curve", "Linear") ?: "Linear"
     }
 
     /** Serializes and persists the list of autoclicker profiles. */
@@ -94,18 +51,6 @@ class AutomationRepository(context: Context) {
     }
     fun saveSelectedRecordingIndex(i: Int) { _selectedRecordingIndex.value = i; p.edit { putInt("selected_recording_index", i) } }
 
-    fun saveConfirmDelete(enabled: Boolean) { _confirmDelete.value = enabled; p.edit { putBoolean("confirm_delete", enabled) } }
-    fun saveTrailEnabled(e: Boolean) { _isTrailEnabled.value = e; p.edit { putBoolean("is_trail_enabled", e) } }
-    fun saveTrackpadSensitivity(v: Float) { val c = v.coerceIn(0.1f, 8.0f); _trackpadSensitivity.value = c; p.edit { putFloat("trackpad_sensitivity", c) } }
-    fun saveTrackpointSensitivity(v: Float) { val c = v.coerceIn(0.1f, 8.0f); _trackpointSensitivity.value = c; p.edit { putFloat("trackpoint_sensitivity", c) } }
-    fun saveTrackpointAnimationEnabled(e: Boolean) { _isTrackpointAnimationEnabled.value = e; p.edit { putBoolean("is_trackpoint_animation_enabled", e) } }
-    fun saveTrackpadMode(m: String) { _trackpadMode.value = m; p.edit { putString("trackpad_mode", m) } }
-    fun saveLanguage(l: String) { _appLanguage.value = l; p.edit { putString("app_language", l) } }
-    fun saveThemeMode(m: String) { _themeMode.value = m; p.edit { putString("theme_mode", m) } }
-    
-    fun saveTrackpadAcceleration(v: Float) { _trackpadAcceleration.value = v; p.edit { putFloat("trackpad_acceleration", v) } }
-    fun saveTrackpointCurve(c: String) { _trackpointCurve.value = c; p.edit { putString("trackpoint_curve", c) } }
-    
     /** Retrieves the currently active profile. */
     fun getActiveConfig() = _configs.value.getOrNull(_selectedIndex.value)
 }

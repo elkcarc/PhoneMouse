@@ -3,7 +3,6 @@ package com.example.phonemouse
 import android.app.Application
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothHidDevice
-import android.view.MotionEvent
 import io.mockk.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,6 +19,7 @@ class FunctionalIntegrationTest {
     private val dispatcher = UnconfinedTestDispatcher()
     private val app = mockk<Application>(relaxed = true)
     private val repo = mockk<AutomationRepository>(relaxed = true)
+    private val settings = mockk<SettingsRepository>(relaxed = true)
     private val hidManager = mockk<HidServiceManager>(relaxed = true)
     
     private val mockHid = mockk<BluetoothHidDevice>(relaxed = true)
@@ -36,23 +36,25 @@ class FunctionalIntegrationTest {
         every { hidManager.mouseHidService } returns MutableStateFlow(service)
         service.setTestHost(mockHost)
         
-        // Mock repo flows (minimal set needed for VM initialization)
+        // Mock repo flows
         every { repo.configs } returns MutableStateFlow(emptyList())
         every { repo.selectedIndex } returns MutableStateFlow(0)
         every { repo.recordings } returns MutableStateFlow(emptyList())
         every { repo.selectedRecordingIndex } returns MutableStateFlow(0)
-        every { repo.confirmDelete } returns MutableStateFlow(true)
-        every { repo.appLanguage } returns MutableStateFlow("en")
-        every { repo.themeMode } returns MutableStateFlow("Auto")
-        every { repo.trackpadMode } returns MutableStateFlow("Trackpad")
-        every { repo.isTrailEnabled } returns MutableStateFlow(true)
-        every { repo.trackpadSensitivity } returns MutableStateFlow(1.0f)
-        every { repo.trackpadAcceleration } returns MutableStateFlow(1.0f)
-        every { repo.trackpointSensitivity } returns MutableStateFlow(1.0f)
-        every { repo.trackpointCurve } returns MutableStateFlow("Linear")
-        every { repo.isTrackpointAnimationEnabled } returns MutableStateFlow(true)
 
-        viewModel = MainViewModel(app, repo, hidManager)
+        // Mock settings flows
+        every { settings.confirmDelete } returns MutableStateFlow(true)
+        every { settings.appLanguage } returns MutableStateFlow("en")
+        every { settings.themeMode } returns MutableStateFlow("Auto")
+        every { settings.trackpadMode } returns MutableStateFlow("Trackpad")
+        every { settings.isTrailEnabled } returns MutableStateFlow(true)
+        every { settings.trackpadSensitivity } returns MutableStateFlow(1.0f)
+        every { settings.trackpadAcceleration } returns MutableStateFlow(1.0f)
+        every { settings.trackpointSensitivity } returns MutableStateFlow(1.0f)
+        every { settings.trackpointCurve } returns MutableStateFlow("Linear")
+        every { settings.isTrackpointAnimationEnabled } returns MutableStateFlow(true)
+
+        viewModel = MainViewModel(app, repo, settings, hidManager)
     }
 
     @After
@@ -62,14 +64,9 @@ class FunctionalIntegrationTest {
 
     @Test
     fun `viewModel movement propagates to hid service`() {
-        // This simulates what happens in MainActivity's move listener:
-        // trackpad.setOnMoveListener { dx, dy -> viewModel.mouseHidService.value?.sendManualMove(dx, dy) }
-        
         val dx = 10
         val dy = 20
         viewModel.mouseHidService.value?.sendManualMove(dx, dy)
-        
-        // Verify correctly formed packet [0, 10, 20, 0] reached the low-level HID proxy
         verify { mockHid.sendReport(mockHost, 0, match { it[1] == 10.toByte() && it[2] == 20.toByte() }) }
     }
 
@@ -77,23 +74,19 @@ class FunctionalIntegrationTest {
     fun `selecting config in viewmodel updates service config`() {
         val config = AutomationConfig("Test", 1, 2, 3, 4, 5, 6, 7)
         every { repo.getActiveConfig() } returns config
-        
         viewModel.selectConfig(0)
-        
-        // Service should now have the new config (used by auto-clicker)
-        // We can't check private field 'config', but we can check if it was fetched from repo
         verify { repo.getActiveConfig() }
     }
 
     @Test
     fun `settings changes in viewmodel persist to repository`() {
         viewModel.setThemeMode("Dark")
-        verify { repo.saveThemeMode("Dark") }
+        verify { settings.saveThemeMode("Dark") }
 
         viewModel.setTrackpadSensitivity(5.0f)
-        verify { repo.saveTrackpadSensitivity(5.0f) }
+        verify { settings.saveTrackpadSensitivity(5.0f) }
 
         viewModel.setLanguage("ru")
-        verify { repo.saveLanguage("ru") }
+        verify { settings.saveLanguage("ru") }
     }
 }

@@ -13,7 +13,7 @@ import android.annotation.SuppressLint
 class MouseHidService(
     private val context: Context,
     private var hid: BluetoothHidDevice? = null,
-    private val handler: Handler = Handler(Looper.getMainLooper())
+    private val handler: Handler = Handler(Looper.getMainLooper()),
 ) {
     private var isRegistered = false
     private var host: BluetoothDevice? = null
@@ -36,9 +36,9 @@ class MouseHidService(
     val isAutomationRunning = _isAutoRunning.asStateFlow()
 
     // Recording & Playback
-    private val _isRecording = MutableStateFlow(false)
+    private val _isRecording = MutableStateFlow(value = false)
     val isRecording = _isRecording.asStateFlow()
-    private val _isPlaying = MutableStateFlow(false)
+    private val _isPlaying = MutableStateFlow(value = false)
     val isPlaying = _isPlaying.asStateFlow()
     
     private var currentRecording = mutableListOf<Pair<Long, ByteArray>>()
@@ -148,9 +148,12 @@ class MouseHidService(
         
         fun runEvents() {
             events.forEach { event ->
-                handler.postDelayed({
-                    if (_isPlaying.value) sendReportInternal(event.second)
-                }, event.first)
+                handler.postDelayed(
+                    {
+                        if (_isPlaying.value) sendReportInternal(event.second)
+                    },
+                    event.first
+                )
             }
             val totalDuration = events.last().first
             handler.postDelayed(
@@ -206,14 +209,17 @@ class MouseHidService(
     private val autoRunnable = object : Runnable {
         @SuppressLint("MissingPermission")
         override fun run() {
-            if (!_isAutoRunning.value || host == null || hid == null) return
-            setButtonState(0x01, true)
-            val hold = config?.let { random.nextInt(it.maxPressDuration - it.minPressDuration + 1) + it.minPressDuration } ?: gaussian(95f, 17f)
-            handler.postDelayed({
-                setButtonState(0x01, false)
-                val gap = config?.let { if (random.nextInt(it.delayFrequency) == 0) (random.nextInt(it.maxBreakDelay - it.minBreakDelay + 1) + it.minBreakDelay) else (random.nextInt(it.maxInterval - it.minInterval + 1) + it.minInterval) } ?: (if (random.nextInt(500) == 0) random.nextInt(117001) + 3000 else gaussian(153f, 48f))
-                if (_isAutoRunning.value) handler.postDelayed(this, gap.toLong())
-            }, hold.toLong())
+            if ((!_isAutoRunning.value) || (host == null) || (hid == null)) return
+            setButtonState(mask = 0x01, pressed = true)
+            val hold = config?.let { random.nextInt((it.maxPressDuration - it.minPressDuration) + 1) + it.minPressDuration } ?: gaussian(95f, 17f)
+            handler.postDelayed(
+                {
+                    setButtonState(mask = 0x01, pressed = false)
+                    val gap = config?.let { if (random.nextInt(it.delayFrequency) == 0) (random.nextInt((it.maxBreakDelay - it.minBreakDelay) + 1) + it.minBreakDelay) else (random.nextInt((it.maxInterval - it.minInterval) + 1) + it.minInterval) } ?: (if (random.nextInt(500) == 0) random.nextInt(117001) + 3000 else gaussian(153f, 48f))
+                    if (_isAutoRunning.value) handler.postDelayed(this, gap.toLong())
+                },
+                hold.toLong()
+            )
         }
     }
 

@@ -20,6 +20,7 @@ class MainViewModelTest {
     private val dispatcher = UnconfinedTestDispatcher()
     private val app = mockk<Application>(relaxed = true)
     private val repo = mockk<AutomationRepository>(relaxed = true)
+    private val settings = mockk<SettingsRepository>(relaxed = true)
     private val hid = mockk<HidServiceManager>(relaxed = true)
     private val serviceFlow = MutableStateFlow<MouseHidService?>(null)
     private lateinit var viewModel: MainViewModel
@@ -33,20 +34,22 @@ class MainViewModelTest {
         every { repo.selectedIndex } returns MutableStateFlow(0)
         every { repo.recordings } returns MutableStateFlow(emptyList())
         every { repo.selectedRecordingIndex } returns MutableStateFlow(0)
-        every { repo.confirmDelete } returns MutableStateFlow(true)
-        every { repo.appLanguage } returns MutableStateFlow("en")
-        every { repo.themeMode } returns MutableStateFlow("Auto")
-        every { repo.trackpadMode } returns MutableStateFlow("Trackpad")
-        every { repo.isTrailEnabled } returns MutableStateFlow(true)
-        every { repo.trackpadSensitivity } returns MutableStateFlow(3.0f)
-        every { repo.trackpadAcceleration } returns MutableStateFlow(1.0f)
-        every { repo.trackpointSensitivity } returns MutableStateFlow(1.5f)
-        every { repo.trackpointCurve } returns MutableStateFlow("Linear")
-        every { repo.isTrackpointAnimationEnabled } returns MutableStateFlow(true)
+
+        // Mock settings flows
+        every { settings.confirmDelete } returns MutableStateFlow(value = true)
+        every { settings.appLanguage } returns MutableStateFlow("en")
+        every { settings.themeMode } returns MutableStateFlow("Auto")
+        every { settings.trackpadMode } returns MutableStateFlow("Trackpad")
+        every { settings.isTrailEnabled } returns MutableStateFlow(value = true)
+        every { settings.trackpadSensitivity } returns MutableStateFlow(3.0f)
+        every { settings.trackpadAcceleration } returns MutableStateFlow(1.0f)
+        every { settings.trackpointSensitivity } returns MutableStateFlow(1.5f)
+        every { settings.trackpointCurve } returns MutableStateFlow("Linear")
+        every { settings.isTrackpointAnimationEnabled } returns MutableStateFlow(value = true)
         
         every { hid.mouseHidService } returns serviceFlow
         
-        viewModel = MainViewModel(app, repo, hid)
+        viewModel = MainViewModel(app, repo, settings, hid)
     }
 
     @After
@@ -150,7 +153,7 @@ class MainViewModelTest {
         val configs = listOf(
             AutomationConfig("P1", 0,0,0,0,0,0,0),
             AutomationConfig("P2", 0,0,0,0,0,0,0),
-            AutomationConfig("P3", 0,0,0,0,0,0,0)
+            AutomationConfig("P3", 0,0,0,0,0,0,0),
         )
         every { repo.configs.value } returns configs
         every { repo.selectedIndex.value } returns 1 // P2 is selected

@@ -9,7 +9,8 @@ import kotlinx.coroutines.flow.*
 class MainViewModel @JvmOverloads constructor(
     app: Application,
     private val repo: AutomationRepository = AutomationRepository(app),
-    private val hid: HidServiceManager = HidServiceManager(app)
+    private val settings: SettingsRepository = SettingsRepository(app),
+    private val hid: HidServiceManager = HidServiceManager(app),
 ) : AndroidViewModel(app) {
     private val _isSettingsVisible = MutableStateFlow(value = false)
     private val _activePanel = MutableStateFlow(value = "Main")
@@ -26,18 +27,18 @@ class MainViewModel @JvmOverloads constructor(
         repo.selectedRecordingIndex,
         repo.configs,
         repo.selectedIndex,
-        repo.confirmDelete,
-        repo.appLanguage,
-        repo.themeMode,
+        settings.confirmDelete,
+        settings.appLanguage,
+        settings.themeMode,
         _isSettingsVisible,
         _activePanel,
-        repo.trackpadMode,
-        repo.isTrailEnabled,
-        repo.trackpadSensitivity,
-        repo.trackpadAcceleration,
-        repo.trackpointSensitivity,
-        repo.trackpointCurve,
-        repo.isTrackpointAnimationEnabled,
+        settings.trackpadMode,
+        settings.isTrailEnabled,
+        settings.trackpadSensitivity,
+        settings.trackpadAcceleration,
+        settings.trackpointSensitivity,
+        settings.trackpointCurve,
+        settings.isTrackpointAnimationEnabled,
     ) { p ->
         @Suppress("UNCHECKED_CAST")
         MainUiState(
@@ -139,8 +140,12 @@ class MainViewModel @JvmOverloads constructor(
         val newList = repo.configs.value.toMutableList()
         if ((from in newList.indices) && (to in newList.indices)) {
             newList.add(to, newList.removeAt(from))
-            val cur = repo.selectedIndex.value
-            val next = when (cur) { from -> to; in (from + 1)..to -> cur - 1; in to until from -> cur + 1; else -> cur }
+            val next = when (val cur = repo.selectedIndex.value) {
+                from -> to
+                in (from + 1)..to -> cur - 1
+                in to until from -> cur + 1
+                else -> cur
+            }
             repo.saveSelectedIndex(next)
             repo.saveConfigs(newList)
             mouseHidService.value?.setConfig(repo.getActiveConfig())
@@ -173,8 +178,11 @@ class MainViewModel @JvmOverloads constructor(
         if (index in newList.indices) {
             newList.removeAt(index)
             repo.saveRecordings(newList)
-            val currentSelected = repo.selectedRecordingIndex.value
-            repo.saveSelectedRecordingIndex(if (newList.isEmpty()) 0 else if (currentSelected >= newList.size) newList.size - 1 else currentSelected)
+            val next = when (val cur = repo.selectedRecordingIndex.value) {
+                0 -> 0
+                else -> if (cur >= newList.size) newList.size - 1 else cur
+            }
+            repo.saveSelectedRecordingIndex(next)
         }
     }
     fun moveRecording(from: Int, to: Int) {
@@ -189,16 +197,16 @@ class MainViewModel @JvmOverloads constructor(
     }
 
     /** Persistence setters. */
-    fun setConfirmDelete(enabled: Boolean) = repo.saveConfirmDelete(enabled)
-    fun setLanguage(l: String) = repo.saveLanguage(l)
-    fun setThemeMode(m: String) = repo.saveThemeMode(m)
-    fun setTrackpadMode(m: String) = repo.saveTrackpadMode(m)
-    fun setTrailEnabled(e: Boolean) = repo.saveTrailEnabled(e)
-    fun setTrackpadSensitivity(v: Float) = repo.saveTrackpadSensitivity(v)
-    fun setTrackpadAcceleration(v: Float) = repo.saveTrackpadAcceleration(v)
-    fun setTrackpointSensitivity(v: Float) = repo.saveTrackpointSensitivity(v)
-    fun setTrackpointCurve(c: String) = repo.saveTrackpointCurve(c)
-    fun setTrackpointAnimationEnabled(e: Boolean) = repo.saveTrackpointAnimationEnabled(e)
+    fun setConfirmDelete(enabled: Boolean) = settings.saveConfirmDelete(enabled)
+    fun setLanguage(l: String) = settings.saveLanguage(l)
+    fun setThemeMode(m: String) = settings.saveThemeMode(m)
+    fun setTrackpadMode(m: String) = settings.saveTrackpadMode(m)
+    fun setTrailEnabled(e: Boolean) = settings.saveTrailEnabled(e)
+    fun setTrackpadSensitivity(v: Float) = settings.saveTrackpadSensitivity(v)
+    fun setTrackpadAcceleration(v: Float) = settings.saveTrackpadAcceleration(v)
+    fun setTrackpointSensitivity(v: Float) = settings.saveTrackpointSensitivity(v)
+    fun setTrackpointCurve(c: String) = settings.saveTrackpointCurve(c)
+    fun setTrackpointAnimationEnabled(e: Boolean) = settings.saveTrackpointAnimationEnabled(e)
 
     override fun onCleared() { super.onCleared(); hid.unbind() }
 }

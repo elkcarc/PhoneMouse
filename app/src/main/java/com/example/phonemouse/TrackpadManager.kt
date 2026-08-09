@@ -54,7 +54,7 @@ class TrackpadManager(
             val dx = (curveX * 25 * trackpointSensitivity).toInt()
             val dy = (curveY * 25 * trackpointSensitivity).toInt()
             
-            if (dx != 0 || dy != 0) onMove(dx, dy)
+            if ((dx != 0) || (dy != 0)) onMove(dx, dy)
             if (isTrackpointAnimationEnabled) {
                 // Animation follows raw touch position linearly, ignoring the movement curve
                 onUpdateAnimation(nx * (viewWidth / 4f), ny * (viewHeight / 4f))
@@ -129,7 +129,7 @@ class TrackpadManager(
                             val outX = moveX.toInt()
                             val outY = moveY.toInt()
                             
-                            if (outX != 0 || outY != 0) {
+                            if ((outX != 0) || (outY != 0)) {
                                 onMove(outX, outY)
                             }
                             remX = moveX - outX

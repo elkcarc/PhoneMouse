@@ -13,7 +13,6 @@ import android.widget.*
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
-import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
@@ -31,6 +30,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private val viewModel: MainViewModel by viewModels()
     private val perms by lazy { BluetoothPermissionManager(this) }
+    private val dialogs by lazy { MainDialogHelper(this, viewModel) }
     private lateinit var configAdapter: ConfigsAdapter
     private lateinit var recordingAdapter: RecordingsAdapter
 
@@ -105,7 +105,7 @@ class MainActivity : AppCompatActivity() {
                     viewModel.setSettingsVisible(v = false)
                     viewModel.setActivePanel("Main")
                 }
-            }
+            },
         )
         
         setupMouseButtons()
@@ -121,12 +121,15 @@ class MainActivity : AppCompatActivity() {
             when (e.actionMasked) {
                 MotionEvent.ACTION_DOWN -> {
                     v.performClick()
-                    if (m != 0x00.toByte()) viewModel.mouseHidService.value?.setButtonState(m, true)
-                    else viewModel.mouseHidService.value?.sendManualScroll(if (v.id == R.id.scrollUpBtn) 1 else -1)
+                    if (m != 0x00.toByte()) {
+                        viewModel.mouseHidService.value?.setButtonState(mask = m, pressed = true)
+                    } else {
+                        viewModel.mouseHidService.value?.sendManualScroll(if (v.id == R.id.scrollUpBtn) 1 else -1)
+                    }
                     v.isPressed = true
                 }
                 MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
-                    if (m != 0x00.toByte()) viewModel.mouseHidService.value?.setButtonState(m, false)
+                    if (m != 0x00.toByte()) viewModel.mouseHidService.value?.setButtonState(mask = m, pressed = false)
                     v.isPressed = false
                 }
             }
@@ -150,50 +153,54 @@ class MainActivity : AppCompatActivity() {
         binding.navDrawerMain.recordingsRecyclerView.addOnItemTouchListener(disallowIntercept)
 
         // Profiles List
-        val configTouchHelper = ItemTouchHelper(object : SwipeCallback() {
-            override fun isLongPressDragEnabled() = false
-            override fun onMove(r: RecyclerView, v: RecyclerView.ViewHolder, t: RecyclerView.ViewHolder) = true.also { viewModel.moveConfig(v.adapterPosition, t.adapterPosition) }
-            override fun onSwiped(v: RecyclerView.ViewHolder, d: Int) {
-                val pos = v.adapterPosition
-                if (pos == RecyclerView.NO_POSITION) return
-                if (d == ItemTouchHelper.LEFT) confirmDelete { viewModel.deleteConfig(pos) }
-                else showEditProfileDialog(pos)
-                configAdapter.notifyItemChanged(pos)
+        val configTouchHelper = ItemTouchHelper(
+            object : SwipeCallback() {
+                override fun isLongPressDragEnabled() = false
+                override fun onMove(r: RecyclerView, v: RecyclerView.ViewHolder, t: RecyclerView.ViewHolder) = true.also { viewModel.moveConfig(v.adapterPosition, t.adapterPosition) }
+                override fun onSwiped(v: RecyclerView.ViewHolder, d: Int) {
+                    val pos = v.adapterPosition
+                    if (pos == RecyclerView.NO_POSITION) return
+                    if (d == ItemTouchHelper.LEFT) dialogs.confirmDelete { viewModel.deleteConfig(pos) }
+                    else dialogs.showEditProfileDialog(pos)
+                    configAdapter.notifyItemChanged(pos)
+                }
             }
-        })
+        )
         configTouchHelper.attachToRecyclerView(binding.navDrawerMain.configsRecyclerView)
         configAdapter = ConfigsAdapter(
-            emptyList<AutomationConfig>(), 
-            0, 
-            { pos -> viewModel.selectConfig(pos); showEditProfileDialog(pos) }
+            list = emptyList(), 
+            selectedIndex = 0, 
+            onClick = { pos -> viewModel.selectConfig(pos); dialogs.showEditProfileDialog(pos) }
         ) { configTouchHelper.startDrag(it) }
         binding.navDrawerMain.configsRecyclerView.apply { layoutManager = LinearLayoutManager(this@MainActivity); adapter = configAdapter }
 
         // Input Recordings
-        val recordingTouchHelper = ItemTouchHelper(object : SwipeCallback() {
-            override fun isLongPressDragEnabled() = false
-            override fun onMove(r: RecyclerView, v: RecyclerView.ViewHolder, t: RecyclerView.ViewHolder) = true.also { viewModel.moveRecording(v.adapterPosition, t.adapterPosition) }
-            override fun onSwiped(v: RecyclerView.ViewHolder, d: Int) {
-                val pos = v.adapterPosition
-                if (pos == RecyclerView.NO_POSITION) return
-                if (d == ItemTouchHelper.LEFT) confirmDelete { viewModel.deleteRecording(pos) }
-                else showEditRecordingDialog(pos)
-                recordingAdapter.notifyItemChanged(pos)
+        val recordingTouchHelper = ItemTouchHelper(
+            object : SwipeCallback() {
+                override fun isLongPressDragEnabled() = false
+                override fun onMove(r: RecyclerView, v: RecyclerView.ViewHolder, t: RecyclerView.ViewHolder) = true.also { viewModel.moveRecording(v.adapterPosition, t.adapterPosition) }
+                override fun onSwiped(v: RecyclerView.ViewHolder, d: Int) {
+                    val pos = v.adapterPosition
+                    if (pos == RecyclerView.NO_POSITION) return
+                    if (d == ItemTouchHelper.LEFT) dialogs.confirmDelete { viewModel.deleteRecording(pos) }
+                    else dialogs.showEditRecordingDialog(pos)
+                    recordingAdapter.notifyItemChanged(pos)
+                }
             }
-        })
+        )
         recordingTouchHelper.attachToRecyclerView(binding.navDrawerMain.recordingsRecyclerView)
         recordingAdapter = RecordingsAdapter(
-            emptyList<InputRecording>(), 
-            0, 
-            { pos -> viewModel.selectRecording(pos); showEditRecordingDialog(pos) }
+            list = emptyList(), 
+            selectedIndex = 0, 
+            onClick = { pos -> viewModel.selectRecording(pos); dialogs.showEditRecordingDialog(pos) }
         ) { recordingTouchHelper.startDrag(it) }
         binding.navDrawerMain.recordingsRecyclerView.apply { layoutManager = LinearLayoutManager(this@MainActivity); adapter = recordingAdapter }
     }
 
     /** Base class for swipe actions with visual background reveals. */
     private abstract inner class SwipeCallback : ItemTouchHelper.SimpleCallback(ItemTouchHelper.UP or ItemTouchHelper.DOWN, ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT) {
-        private val deleteColor = Color.parseColor("#E53935")
-        private val editColor = Color.parseColor("#43A047")
+        private val deleteColor = 0xFFE53935.toInt()
+        private val editColor = 0xFF43A047.toInt()
         private val deleteIcon = ContextCompat.getDrawable(this@MainActivity, R.drawable.ic_close)?.apply { setTint(Color.WHITE) }
         private val editIcon = ContextCompat.getDrawable(this@MainActivity, R.drawable.ic_edit)?.apply { setTint(Color.WHITE) }
         private val cornerRadius = 12 * resources.displayMetrics.density
@@ -209,81 +216,39 @@ class MainActivity : AppCompatActivity() {
             
             if (dX > 0) { // Swipe Right (Edit)
                 paint.color = editColor
-                val background = RectF(itemView.left.toFloat() + 16 * resources.displayMetrics.density, itemView.top.toFloat() + 8 * resources.displayMetrics.density, itemView.left.toFloat() + dX + cornerRadius, itemView.bottom.toFloat() - 8 * resources.displayMetrics.density)
+                val background = RectF(
+                    (itemView.left.toFloat() + (16 * resources.displayMetrics.density)),
+                    (itemView.top.toFloat() + (8 * resources.displayMetrics.density)),
+                    (itemView.left.toFloat() + dX + cornerRadius),
+                    (itemView.bottom.toFloat() - (8 * resources.displayMetrics.density)),
+                )
                 c.drawRoundRect(background, cornerRadius, cornerRadius, paint)
                 
                 editIcon?.let { icon ->
                     val iconLeft = itemView.left + iconMargin + (16 * resources.displayMetrics.density).toInt()
                     val iconRight = iconLeft + icon.intrinsicWidth
                     icon.setBounds(iconLeft, iconTop, iconRight, iconBottom)
-                    if (dX > iconMargin + 16 * resources.displayMetrics.density) icon.draw(c)
+                    if (dX > (iconMargin + (16 * resources.displayMetrics.density))) icon.draw(c)
                 }
             } else if (dX < 0) { // Swipe Left (Delete)
                 paint.color = deleteColor
-                val background = RectF(itemView.right.toFloat() + dX - cornerRadius, itemView.top.toFloat() + 8 * resources.displayMetrics.density, itemView.right.toFloat() - 16 * resources.displayMetrics.density, itemView.bottom.toFloat() - 8 * resources.displayMetrics.density)
+                val background = RectF(
+                    ((itemView.right.toFloat() + dX) - cornerRadius),
+                    (itemView.top.toFloat() + (8 * resources.displayMetrics.density)),
+                    (itemView.right.toFloat() - (16 * resources.displayMetrics.density)),
+                    (itemView.bottom.toFloat() - (8 * resources.displayMetrics.density)),
+                )
                 c.drawRoundRect(background, cornerRadius, cornerRadius, paint)
                 
                 deleteIcon?.let { icon ->
                     val iconRight = itemView.right - iconMargin - (16 * resources.displayMetrics.density).toInt()
                     val iconLeft = iconRight - icon.intrinsicWidth
                     icon.setBounds(iconLeft, iconTop, iconRight, iconBottom)
-                    if (kotlin.math.abs(dX) > iconMargin + 16 * resources.displayMetrics.density) icon.draw(c)
+                    if (kotlin.math.abs(dX) > (iconMargin + (16 * resources.displayMetrics.density))) icon.draw(c)
                 }
             }
             super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive)
         }
-    }
-
-    private fun confirmDelete(onConfirm: () -> Unit) {
-        if (!viewModel.uiState.value.confirmDelete) return onConfirm()
-        AlertDialog.Builder(this).setTitle(R.string.confirm_delete_title).setMessage(R.string.confirm_delete_message)
-            .setPositiveButton(R.string.delete) { _, _ -> onConfirm() }.setNegativeButton(R.string.cancel, null).show()
-    }
-
-    private fun showEditProfileDialog(index: Int?) {
-        val cfg = if (index != null) viewModel.uiState.value.configs.getOrNull(index) else null
-        val defaultName = if (index == null) viewModel.generateNextProfileName() else ""
-        
-        val dialogView = layoutInflater.inflate(R.layout.dialog_edit_profile, null)
-        val nameInput = dialogView.findViewById<EditText>(R.id.editName).apply { setText(cfg?.name ?: defaultName) }
-        val minI = dialogView.findViewById<EditText>(R.id.editMinInt).apply { setText(cfg?.minInterval?.toString() ?: "100") }
-        val maxI = dialogView.findViewById<EditText>(R.id.editMaxInt).apply { setText(cfg?.maxInterval?.toString() ?: "300") }
-        val minP = dialogView.findViewById<EditText>(R.id.editMinPress).apply { setText(cfg?.minPressDuration?.toString() ?: "50") }
-        val maxP = dialogView.findViewById<EditText>(R.id.editMaxPress).apply { setText(cfg?.maxPressDuration?.toString() ?: "150") }
-        val minB = dialogView.findViewById<EditText>(R.id.editMinBreak).apply { setText(cfg?.minBreakDelay?.toString() ?: "3000") }
-        val maxB = dialogView.findViewById<EditText>(R.id.editMaxBreak).apply { setText(cfg?.maxBreakDelay?.toString() ?: "60000") }
-        val freq = dialogView.findViewById<EditText>(R.id.editFreq).apply { setText(cfg?.delayFrequency?.toString() ?: "500") }
-
-        AlertDialog.Builder(this).setTitle(if (index == null) R.string.add_new_profile else R.string.edit_profile).setView(dialogView)
-            .setPositiveButton(R.string.save) { _, _ ->
-                val name = nameInput.text.toString()
-                val mi = minI.text.toString().toIntOrNull() ?: 100
-                val ma = maxI.text.toString().toIntOrNull() ?: 300
-                val mp = minP.text.toString().toIntOrNull() ?: 50
-                val mpa = maxP.text.toString().toIntOrNull() ?: 150
-                val mb = minB.text.toString().toIntOrNull() ?: 3000
-                val mba = maxB.text.toString().toIntOrNull() ?: 60000
-                val f = freq.text.toString().toIntOrNull() ?: 500
-                
-                if (index != null) {
-                    viewModel.updateConfig(index, name, mi, ma, mp, mpa, mb, mba, f)
-                } else {
-                    viewModel.addConfig(name, mi, ma, mp, mpa, mb, mba, f)
-                }
-            }.setNegativeButton(R.string.cancel, null).show()
-    }
-
-    private fun showEditRecordingDialog(index: Int) {
-        val rec = viewModel.uiState.value.recordings.getOrNull(index) ?: return
-        val dialogView = layoutInflater.inflate(R.layout.dialog_edit_recording, null)
-        val nameInput = dialogView.findViewById<EditText>(R.id.editRecName).apply { setText(rec.name) }
-        val loopToggle = dialogView.findViewById<com.google.android.material.switchmaterial.SwitchMaterial>(R.id.loopPlaybackToggle).apply { isChecked = rec.loopPlayback }
-
-        AlertDialog.Builder(this).setTitle(R.string.rename_recording).setView(dialogView)
-            .setPositiveButton(R.string.save) { _, _ ->
-                viewModel.renameRecording(index, nameInput.text.toString())
-                viewModel.updateRecordingLoop(index, loopToggle.isChecked)
-            }.setNegativeButton(R.string.cancel, null).show()
     }
 
     private fun setupDrawer() {
@@ -292,9 +257,9 @@ class MainActivity : AppCompatActivity() {
             recordingsBtn.setOnClickListener { viewModel.setActivePanel("Recordings") }
             profilesBackBtn.setOnClickListener { viewModel.setActivePanel("Main") }
             recordingsBackBtn.setOnClickListener { viewModel.setActivePanel("Main") }
-            settingsBtn.setOnClickListener { viewModel.setSettingsVisible(true) }
+            settingsBtn.setOnClickListener { viewModel.setSettingsVisible(v = true) }
         }
-        binding.navDrawerSettings.settingsBackBtn.setOnClickListener { viewModel.setSettingsVisible(false) }
+        binding.navDrawerSettings.settingsBackBtn.setOnClickListener { viewModel.setSettingsVisible(v = false) }
     }
 
     private fun setupSettings() {
@@ -311,17 +276,19 @@ class MainActivity : AppCompatActivity() {
             trackpointCurveDropdown.setOnItemClickListener { _, _, p, _ -> viewModel.setTrackpointCurve(arrayOf("Linear", "Quadratic", "Cubic")[p]) }
         }
         binding.navDrawerMain.apply {
-            addVariationBtn.setOnClickListener { showEditProfileDialog(index = null) }
+            addVariationBtn.setOnClickListener { dialogs.showEditProfileDialog(index = null) }
         }
     }
 
     private fun setupSpinner(v: AutoCompleteTextView, items: Array<String>, idx: Int) {
-        v.setAdapter(object : ArrayAdapter<String>(this, android.R.layout.simple_spinner_dropdown_item, items) {
-            override fun getFilter() = object : Filter() {
-                override fun performFiltering(c: CharSequence?) = FilterResults().apply { values = items; count = items.size }
-                override fun publishResults(c: CharSequence?, r: FilterResults?) { notifyDataSetChanged() }
-            }
-        })
+        v.setAdapter(
+            object : ArrayAdapter<String>(this, android.R.layout.simple_spinner_dropdown_item, items) {
+                override fun getFilter() = object : Filter() {
+                    override fun performFiltering(c: CharSequence?) = FilterResults().apply { values = items; count = items.size }
+                    override fun publishResults(c: CharSequence?, r: FilterResults?) { notifyDataSetChanged() }
+                }
+            },
+        )
         v.setText(items[idx.coerceAtLeast(0)], false)
     }
 
