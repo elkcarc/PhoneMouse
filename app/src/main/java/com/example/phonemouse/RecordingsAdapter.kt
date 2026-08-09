@@ -8,12 +8,13 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.example.phonemouse.databinding.ItemRecordingBinding
 import java.util.Locale
+import com.google.android.material.R as MaterialR
 
 /** Manages the display and user interaction for the list of input recordings. */
 class RecordingsAdapter(
     private var list: List<InputRecording>,
     private var selectedIndex: Int,
-    private val onSelected: (Int) -> Unit,
+    private val onClick: (Int) -> Unit,
     private val onDrag: (RecyclerView.ViewHolder) -> Unit,
 ) : RecyclerView.Adapter<RecordingsAdapter.ViewHolder>() {
 
@@ -40,10 +41,33 @@ class RecordingsAdapter(
         val rec = list[pos]
         val ctx = h.itemView.context
         
-        val tv = android.util.TypedValue()
-        ctx.theme.resolveAttribute(R.attr.trackpadBackgroundColor, tv, true)
-        h.binding.root.setCardBackgroundColor(if (pos == selectedIndex) tv.data else Color.TRANSPARENT)
-        h.binding.root.strokeWidth = 0
+        val tvTrackpad = android.util.TypedValue()
+        ctx.theme.resolveAttribute(R.attr.trackpadBackgroundColor, tvTrackpad, true)
+        
+        val tvPrimary = android.util.TypedValue()
+        ctx.theme.resolveAttribute(com.google.android.material.R.attr.colorPrimary, tvPrimary, true)
+        
+        val tvOnPrimary = android.util.TypedValue()
+        ctx.theme.resolveAttribute(com.google.android.material.R.attr.colorOnPrimary, tvOnPrimary, true)
+        
+        val tvTextPrimary = android.util.TypedValue()
+        ctx.theme.resolveAttribute(android.R.attr.textColorPrimary, tvTextPrimary, true)
+
+        val isSelected = pos == selectedIndex
+        
+        // Background and Stroke
+        h.binding.root.setCardBackgroundColor(if (isSelected) tvPrimary.data else tvTrackpad.data)
+        h.binding.root.strokeColor = if (isSelected) tvPrimary.data else tvTrackpad.data
+        h.binding.root.strokeWidth = if (isSelected) 6 else 2
+
+        // Text Colors
+        val contentColor = if (isSelected) tvOnPrimary.data else tvTextPrimary.data
+        h.binding.recordingName.setTextColor(contentColor)
+        h.binding.recordingDetails.setTextColor(contentColor)
+        h.binding.recordingDetails.alpha = if (isSelected) 0.9f else 0.7f
+        
+        // Icon Tints
+        h.binding.dragHandle.imageTintList = android.content.res.ColorStateList.valueOf(contentColor)
         
         h.binding.recordingName.text = rec.name
         
@@ -52,7 +76,7 @@ class RecordingsAdapter(
         h.binding.recordingDetails.text = ctx.getString(R.string.recording_details, date, duration, rec.clickCount)
 
         h.binding.dragHandle.setOnTouchListener { v, e -> if (e.action == MotionEvent.ACTION_DOWN) { v.performClick(); onDrag(h) }; false }
-        h.binding.root.setOnClickListener { onSelected(h.adapterPosition) }
+        h.binding.root.setOnClickListener { onClick(h.adapterPosition) }
     }
 
     override fun getItemCount() = list.size

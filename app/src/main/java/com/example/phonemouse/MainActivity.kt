@@ -5,6 +5,7 @@ import android.content.Intent
 import android.content.res.ColorStateList
 import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.RectF
 import android.os.Bundle
 import android.provider.Settings
 import android.view.*
@@ -38,7 +39,11 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
         setupUI()
         setupBackNavigation()
-        lifecycleScope.launch { repeatOnLifecycle(Lifecycle.State.STARTED) { viewModel.uiState.collectLatest { render(it) } } }
+        lifecycleScope.launch { 
+            repeatOnLifecycle(Lifecycle.State.STARTED) { 
+                viewModel.uiState.collectLatest { render(it) } 
+            } 
+        }
         if (!perms.isBluetoothEnabled()) perms.requestBluetoothEnable()
         setupInsets()
     }
@@ -127,7 +132,9 @@ class MainActivity : AppCompatActivity() {
     private fun setupList() {
         val disallowIntercept = object : RecyclerView.OnItemTouchListener {
             override fun onInterceptTouchEvent(rv: RecyclerView, e: MotionEvent): Boolean {
-                if (e.action == MotionEvent.ACTION_DOWN) rv.parent.requestDisallowInterceptTouchEvent(true)
+                if (e.action == MotionEvent.ACTION_MOVE) {
+                    rv.findChildViewUnder(e.x, e.y)?.let { rv.parent.requestDisallowInterceptTouchEvent(true) }
+                }
                 return false
             }
             override fun onTouchEvent(rv: RecyclerView, e: MotionEvent) {}
@@ -136,32 +143,36 @@ class MainActivity : AppCompatActivity() {
         binding.navDrawerMain.configsRecyclerView.addOnItemTouchListener(disallowIntercept)
         binding.navDrawerMain.recordingsRecyclerView.addOnItemTouchListener(disallowIntercept)
 
-        // Profiles Swipe
+        // Profiles List
         val configTouchHelper = ItemTouchHelper(object : SwipeCallback() {
+            override fun isLongPressDragEnabled() = false
             override fun onMove(r: RecyclerView, v: RecyclerView.ViewHolder, t: RecyclerView.ViewHolder) = true.also { viewModel.moveConfig(v.adapterPosition, t.adapterPosition) }
             override fun onSwiped(v: RecyclerView.ViewHolder, d: Int) {
                 val pos = v.adapterPosition
+                if (pos == RecyclerView.NO_POSITION) return
                 if (d == ItemTouchHelper.LEFT) confirmDelete { viewModel.deleteConfig(pos) }
                 else showEditProfileDialog(pos)
                 configAdapter.notifyItemChanged(pos)
             }
         })
         configTouchHelper.attachToRecyclerView(binding.navDrawerMain.configsRecyclerView)
-        configAdapter = ConfigsAdapter(emptyList(), 0, { viewModel.selectConfig(it) }, { configTouchHelper.startDrag(it) })
+        configAdapter = ConfigsAdapter(emptyList<AutomationConfig>(), 0, { pos -> viewModel.selectConfig(pos); showEditProfileDialog(pos) }, { configTouchHelper.startDrag(it) })
         binding.navDrawerMain.configsRecyclerView.apply { layoutManager = LinearLayoutManager(this@MainActivity); adapter = configAdapter }
 
-        // Recordings Swipe
+        // Input Recordings
         val recordingTouchHelper = ItemTouchHelper(object : SwipeCallback() {
+            override fun isLongPressDragEnabled() = false
             override fun onMove(r: RecyclerView, v: RecyclerView.ViewHolder, t: RecyclerView.ViewHolder) = true.also { viewModel.moveRecording(v.adapterPosition, t.adapterPosition) }
             override fun onSwiped(v: RecyclerView.ViewHolder, d: Int) {
                 val pos = v.adapterPosition
+                if (pos == RecyclerView.NO_POSITION) return
                 if (d == ItemTouchHelper.LEFT) confirmDelete { viewModel.deleteRecording(pos) }
                 else showEditRecordingDialog(pos)
                 recordingAdapter.notifyItemChanged(pos)
             }
         })
         recordingTouchHelper.attachToRecyclerView(binding.navDrawerMain.recordingsRecyclerView)
-        recordingAdapter = RecordingsAdapter(emptyList(), 0, { viewModel.selectRecording(it) }, { recordingTouchHelper.startDrag(it) })
+        recordingAdapter = RecordingsAdapter(emptyList<InputRecording>(), 0, { pos -> viewModel.selectRecording(pos); showEditRecordingDialog(pos) }, { recordingTouchHelper.startDrag(it) })
         binding.navDrawerMain.recordingsRecyclerView.apply { layoutManager = LinearLayoutManager(this@MainActivity); adapter = recordingAdapter }
     }
 
@@ -169,32 +180,41 @@ class MainActivity : AppCompatActivity() {
     private abstract inner class SwipeCallback : ItemTouchHelper.SimpleCallback(ItemTouchHelper.UP or ItemTouchHelper.DOWN, ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT) {
         private val deleteColor = Color.parseColor("#E53935")
         private val editColor = Color.parseColor("#43A047")
-        private val deleteIcon = ContextCompat.getDrawable(this@MainActivity, R.drawable.ic_close)!!.apply { setTint(Color.WHITE) }
-        private val editIcon = ContextCompat.getDrawable(this@MainActivity, R.drawable.ic_edit)!!.apply { setTint(Color.WHITE) }
+        private val deleteIcon = ContextCompat.getDrawable(this@MainActivity, R.drawable.ic_close)?.apply { setTint(Color.WHITE) }
+        private val editIcon = ContextCompat.getDrawable(this@MainActivity, R.drawable.ic_edit)?.apply { setTint(Color.WHITE) }
+        private val cornerRadius = 12 * resources.displayMetrics.density
 
         override fun onChildDraw(c: Canvas, recyclerView: RecyclerView, viewHolder: RecyclerView.ViewHolder, dX: Float, dY: Float, actionState: Int, isCurrentlyActive: Boolean) {
             val itemView = viewHolder.itemView
-            val iconMargin = (itemView.height - deleteIcon.intrinsicHeight) / 2
+            val iconSize = deleteIcon?.intrinsicHeight ?: 0
+            val iconMargin = (itemView.height - iconSize) / 2
             val iconTop = itemView.top + iconMargin
-            val iconBottom = iconTop + deleteIcon.intrinsicHeight
+            val iconBottom = iconTop + iconSize
 
-            val background = android.graphics.drawable.ColorDrawable()
+            val paint = android.graphics.Paint().apply { isAntiAlias = true }
+            
             if (dX > 0) { // Swipe Right (Edit)
-                background.color = editColor
-                background.setBounds(itemView.left, itemView.top, itemView.left + dX.toInt(), itemView.bottom)
-                val iconLeft = itemView.left + iconMargin
-                val iconRight = iconLeft + editIcon.intrinsicWidth
-                editIcon.setBounds(iconLeft, iconTop, iconRight, iconBottom)
-                background.draw(c)
-                if (dX > iconMargin) editIcon.draw(c)
+                paint.color = editColor
+                val background = RectF(itemView.left.toFloat() + 16 * resources.displayMetrics.density, itemView.top.toFloat() + 8 * resources.displayMetrics.density, itemView.left.toFloat() + dX + cornerRadius, itemView.bottom.toFloat() - 8 * resources.displayMetrics.density)
+                c.drawRoundRect(background, cornerRadius, cornerRadius, paint)
+                
+                editIcon?.let { icon ->
+                    val iconLeft = itemView.left + iconMargin + (16 * resources.displayMetrics.density).toInt()
+                    val iconRight = iconLeft + icon.intrinsicWidth
+                    icon.setBounds(iconLeft, iconTop, iconRight, iconBottom)
+                    if (dX > iconMargin + 16 * resources.displayMetrics.density) icon.draw(c)
+                }
             } else if (dX < 0) { // Swipe Left (Delete)
-                background.color = deleteColor
-                background.setBounds(itemView.right + dX.toInt(), itemView.top, itemView.right, itemView.bottom)
-                val iconRight = itemView.right - iconMargin
-                val iconLeft = iconRight - deleteIcon.intrinsicWidth
-                deleteIcon.setBounds(iconLeft, iconTop, iconRight, iconBottom)
-                background.draw(c)
-                if (Math.abs(dX) > iconMargin) deleteIcon.draw(c)
+                paint.color = deleteColor
+                val background = RectF(itemView.right.toFloat() + dX - cornerRadius, itemView.top.toFloat() + 8 * resources.displayMetrics.density, itemView.right.toFloat() - 16 * resources.displayMetrics.density, itemView.bottom.toFloat() - 8 * resources.displayMetrics.density)
+                c.drawRoundRect(background, cornerRadius, cornerRadius, paint)
+                
+                deleteIcon?.let { icon ->
+                    val iconRight = itemView.right - iconMargin - (16 * resources.displayMetrics.density).toInt()
+                    val iconLeft = iconRight - icon.intrinsicWidth
+                    icon.setBounds(iconLeft, iconTop, iconRight, iconBottom)
+                    if (Math.abs(dX) > iconMargin + 16 * resources.displayMetrics.density) icon.draw(c)
+                }
             }
             super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive)
         }
@@ -203,7 +223,7 @@ class MainActivity : AppCompatActivity() {
     private fun confirmDelete(onConfirm: () -> Unit) {
         if (!viewModel.uiState.value.confirmDelete) return onConfirm()
         AlertDialog.Builder(this).setTitle(R.string.confirm_delete_title).setMessage(R.string.confirm_delete_message)
-            .setPositiveButton(R.string.delete_recording) { _, _ -> onConfirm() }.setNegativeButton(R.string.cancel, null).show()
+            .setPositiveButton(R.string.delete) { _, _ -> onConfirm() }.setNegativeButton(R.string.cancel, null).show()
     }
 
     private fun showEditProfileDialog(index: Int) {
@@ -293,22 +313,33 @@ class MainActivity : AppCompatActivity() {
             text = if (s.isConnected && (s.connectedDeviceName != null)) getString(R.string.connected_to, s.connectedDeviceName) else getString(s.statusTextRes)
         }
         
+        val typedVal = android.util.TypedValue()
+        theme.resolveAttribute(R.attr.controlIconColor, typedVal, true)
+        val defaultIconColor = typedVal.data
+        
+        val bgVal = android.util.TypedValue()
+        theme.resolveAttribute(R.attr.controlBackgroundColor, bgVal, true)
+        val defaultBgColor = bgVal.data
+
         binding.autoclickerBtn.apply {
             isEnabled = s.isConnected && !s.isRecording && !s.isPlaying
-            setIconResource(if (s.isAutoclickerRunning) R.drawable.ic_stop_circle else R.drawable.ic_ads_click)
-            iconTint = ColorStateList.valueOf(if (s.isAutoclickerRunning) Color.RED else Color.BLACK)
+            setIconResource(if (s.isAutoclickerRunning) R.drawable.ic_stop_circle else R.drawable.ic_autoplay)
+            iconTint = ColorStateList.valueOf(if (s.isAutoclickerRunning) Color.RED else defaultIconColor)
+            backgroundTintList = ColorStateList.valueOf(if (s.isAutoclickerRunning) Color.RED else defaultBgColor).withAlpha(if (isEnabled) 255 else 128)
         }
         
         binding.recordBtn.apply {
             isEnabled = s.isConnected && !s.isAutoclickerRunning && !s.isPlaying
             setIconResource(if (s.isRecording) R.drawable.ic_stop_circle else R.drawable.ic_screen_record)
-            iconTint = ColorStateList.valueOf(if (s.isRecording) Color.RED else Color.BLACK)
+            iconTint = ColorStateList.valueOf(if (s.isRecording) Color.RED else defaultIconColor)
+            backgroundTintList = ColorStateList.valueOf(if (s.isRecording) Color.RED else defaultBgColor).withAlpha(if (isEnabled) 255 else 128)
         }
         
         binding.playbackBtn.apply {
             isEnabled = s.isConnected && s.hasRecording && !s.isAutoclickerRunning && !s.isRecording
             setIconResource(if (s.isPlaying) R.drawable.ic_stop_circle else R.drawable.ic_play_circle)
-            iconTint = ColorStateList.valueOf(if (s.isPlaying) Color.RED else Color.BLACK)
+            iconTint = ColorStateList.valueOf(if (s.isPlaying) Color.RED else defaultIconColor)
+            backgroundTintList = ColorStateList.valueOf(if (s.isPlaying) Color.RED else defaultBgColor).withAlpha(if (isEnabled) 255 else 128)
         }
 
         binding.trackpad.apply {

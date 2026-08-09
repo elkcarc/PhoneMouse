@@ -48,6 +48,7 @@
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/autoclickerBtn"
+                style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
                 android:layout_margin="4dp"
@@ -55,12 +56,16 @@
                 android:enabled="false"
                 android:insetTop="0dp"
                 android:insetBottom="0dp"
-                android:text="@string/start_autoclicker"
-                android:textAllCaps="false"
-                android:textSize="11sp" />
+                app:backgroundTint="?attr/controlBackgroundColor"
+                app:icon="@drawable/ic_autoplay"
+                app:iconGravity="textStart"
+                app:iconPadding="0dp"
+                app:iconSize="32dp"
+                app:iconTint="?attr/controlIconColor" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/recordBtn"
+                style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
                 android:layout_margin="4dp"
@@ -68,12 +73,16 @@
                 android:enabled="false"
                 android:insetTop="0dp"
                 android:insetBottom="0dp"
-                android:text="@string/record_input"
-                android:textAllCaps="false"
-                android:textSize="11sp" />
+                app:backgroundTint="?attr/controlBackgroundColor"
+                app:icon="@drawable/ic_screen_record"
+                app:iconGravity="textStart"
+                app:iconPadding="0dp"
+                app:iconSize="32dp"
+                app:iconTint="?attr/controlIconColor" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/playbackBtn"
+                style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
                 android:layout_margin="4dp"
@@ -81,9 +90,12 @@
                 android:enabled="false"
                 android:insetTop="0dp"
                 android:insetBottom="0dp"
-                android:text="@string/playback"
-                android:textAllCaps="false"
-                android:textSize="11sp" />
+                app:backgroundTint="?attr/controlBackgroundColor"
+                app:icon="@drawable/ic_play_circle"
+                app:iconGravity="textStart"
+                app:iconPadding="0dp"
+                app:iconSize="32dp"
+                app:iconTint="?attr/controlIconColor" />
         </LinearLayout>
 
         <com.example.phonemouse.TrackpadView

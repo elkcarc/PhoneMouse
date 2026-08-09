@@ -6,7 +6,9 @@
     android:layout_marginHorizontal="16dp"
     android:layout_marginVertical="8dp"
     app:cardCornerRadius="12dp"
-    app:cardElevation="2dp">
+    app:cardElevation="0dp"
+    app:strokeWidth="1dp"
+    app:strokeColor="#DDDDDD">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -15,15 +17,8 @@
         android:orientation="horizontal"
         android:padding="12dp">
 
-        <ImageView
-            android:id="@+id/dragHandle"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:layout_marginEnd="12dp"
-            android:src="@drawable/ic_drag_handle"
-            app:tint="?android:attr/textColorPrimary" />
-
         <LinearLayout
+            android:id="@+id/recordingInfo"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
@@ -44,5 +39,17 @@
                 android:alpha="0.7"
                 android:textSize="12sp" />
         </LinearLayout>
+
+        <ImageView
+            android:id="@+id/dragHandle"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_marginStart="8dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:focusable="true"
+            android:padding="8dp"
+            android:src="@drawable/ic_drag_handle"
+            app:tint="?android:attr/textColorPrimary" />
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>
