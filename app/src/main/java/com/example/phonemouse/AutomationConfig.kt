@@ -1,7 +1,10 @@
 package com.example.phonemouse
 
-/** Domain model representing a randomized click strategy. */
+import org.json.JSONObject
+
+/** Domain model representing a randomized click strategy profile. */
 data class AutomationConfig(
+    val name: String,
     val minInterval: Int,
     val maxInterval: Int,
     val minPressDuration: Int,
@@ -10,16 +13,46 @@ data class AutomationConfig(
     val maxBreakDelay: Int,
     val delayFrequency: Int,
 ) {
-    /** Serializes the configuration into a CSV string for persistence. */
-    override fun toString() = "$minInterval,$maxInterval,$minPressDuration,$maxPressDuration,$minBreakDelay,$maxBreakDelay,$delayFrequency"
+    /** Serializes the profile into a JSON string for persistence. */
+    fun toJson(): String {
+        return JSONObject().apply {
+            put("name", name)
+            put("minInt", minInterval)
+            put("maxInt", maxInterval)
+            put("minPress", minPressDuration)
+            put("maxPress", maxPressDuration)
+            put("minBreak", minBreakDelay)
+            put("maxBreak", maxBreakDelay)
+            put("freq", delayFrequency)
+        }.toString()
+    }
 
     companion object {
-        /** Creates an [AutomationConfig] from a CSV string. Returns null on parse error. */
-        fun fromString(data: String): AutomationConfig? {
-            val p = data.split(",")
+        /** Creates an [AutomationConfig] from a JSON string. Returns null on parse error. */
+        fun fromJson(json: String): AutomationConfig? {
             return try {
-                AutomationConfig(p[0].toInt(), p[1].toInt(), p[2].toInt(), p[3].toInt(), p[4].toInt(), p[5].toInt(), p[6].toInt())
-            } catch (_: Exception) { null }
+                val obj = JSONObject(json)
+                AutomationConfig(
+                    obj.getString("name"),
+                    obj.getInt("minInt"),
+                    obj.getInt("maxInt"),
+                    obj.getInt("minPress"),
+                    obj.getInt("maxPress"),
+                    obj.getInt("minBreak"),
+                    obj.getInt("maxBreak"),
+                    obj.getInt("freq")
+                )
+            } catch (_: Exception) {
+                // Fallback to legacy CSV format if JSON parsing fails
+                val parts = json.split(",")
+                if (parts.size >= 7) {
+                    AutomationConfig(
+                        "Autoclicker Profile",
+                        parts[0].toInt(), parts[1].toInt(), parts[2].toInt(),
+                        parts[3].toInt(), parts[4].toInt(), parts[5].toInt(), parts[6].toInt()
+                    )
+                } else null
+            }
         }
     }
 }

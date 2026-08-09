@@ -4,14 +4,16 @@ import android.content.Context
 import androidx.core.content.edit
 import kotlinx.coroutines.flow.*
 
-/** Manages persistent storage for all user settings and automation configurations. */
+/** Manages persistent storage for all user settings, profiles, and recordings. */
 class AutomationRepository(context: Context) {
     private val p = context.getSharedPreferences("PhoneMousePrefs", Context.MODE_PRIVATE)
 
-    private val _configs = MutableStateFlow(value = emptyList<String>())
+    private val _configs = MutableStateFlow(value = emptyList<AutomationConfig>())
+    /** List of all saved autoclicker profiles. */
     val configs = _configs.asStateFlow()
 
     private val _selectedIndex = MutableStateFlow(value = 0)
+    /** Index of the profile currently selected for use. */
     val selectedIndex = _selectedIndex.asStateFlow()
 
     private val _recordings = MutableStateFlow(value = emptyList<InputRecording>())
@@ -21,6 +23,10 @@ class AutomationRepository(context: Context) {
     private val _selectedRecordingIndex = MutableStateFlow(value = 0)
     /** Index of the recording currently selected for playback. */
     val selectedRecordingIndex = _selectedRecordingIndex.asStateFlow()
+
+    private val _confirmDelete = MutableStateFlow(value = true)
+    /** User preference for deletion confirmation dialogs. */
+    val confirmDelete = _confirmDelete.asStateFlow()
 
     private val _isTrailEnabled = MutableStateFlow(value = true)
     val isTrailEnabled = _isTrailEnabled.asStateFlow()
@@ -44,14 +50,17 @@ class AutomationRepository(context: Context) {
     val themeMode = _themeMode.asStateFlow()
 
     init {
-        val s = p.getString("configs", "100,300,50,150,3000,60000,500") ?: ""
-        _configs.value = if (s.isEmpty()) emptyList() else s.split("|")
+        val s = p.getString("configs", "") ?: ""
+        _configs.value = if (s.isEmpty()) {
+            listOf(AutomationConfig("Default Profile", 100, 300, 50, 150, 3000, 60000, 500))
+        } else s.split("|||").mapNotNull { AutomationConfig.fromJson(it) }
         _selectedIndex.value = p.getInt("selected_config_index", 0)
         
         val r = p.getString("recordings", "") ?: ""
         _recordings.value = if (r.isEmpty()) emptyList() else r.split("|||").mapNotNull { InputRecording.fromJson(it) }
         _selectedRecordingIndex.value = p.getInt("selected_recording_index", 0)
 
+        _confirmDelete.value = p.getBoolean("confirm_delete", true)
         _isTrailEnabled.value = p.getBoolean("is_trail_enabled", true)
         _trackpadSensitivity.value = p.getFloat("trackpad_sensitivity", 3.0f)
         _trackpointSensitivity.value = p.getFloat("trackpoint_sensitivity", 1.5f)
@@ -61,7 +70,11 @@ class AutomationRepository(context: Context) {
         _themeMode.value = p.getString("theme_mode", "Auto") ?: "Auto"
     }
 
-    fun saveConfigs(l: List<String>) { _configs.value = l; p.edit { putString("configs", l.joinToString("|")) } }
+    /** Serializes and persists the list of autoclicker profiles. */
+    fun saveConfigs(l: List<AutomationConfig>) { 
+        _configs.value = l
+        p.edit { putString("configs", l.joinToString("|||") { it.toJson() }) } 
+    }
     fun saveSelectedIndex(i: Int) { _selectedIndex.value = i; p.edit { putInt("selected_config_index", i) } }
     
     /** Serializes and persists the list of input recordings. */
@@ -71,6 +84,7 @@ class AutomationRepository(context: Context) {
     }
     fun saveSelectedRecordingIndex(i: Int) { _selectedRecordingIndex.value = i; p.edit { putInt("selected_recording_index", i) } }
 
+    fun saveConfirmDelete(enabled: Boolean) { _confirmDelete.value = enabled; p.edit { putBoolean("confirm_delete", enabled) } }
     fun saveTrailEnabled(e: Boolean) { _isTrailEnabled.value = e; p.edit { putBoolean("is_trail_enabled", e) } }
     fun saveTrackpadSensitivity(v: Float) { val c = v.coerceIn(0.1f, 8.0f); _trackpadSensitivity.value = c; p.edit { putFloat("trackpad_sensitivity", c) } }
     fun saveTrackpointSensitivity(v: Float) { val c = v.coerceIn(0.1f, 8.0f); _trackpointSensitivity.value = c; p.edit { putFloat("trackpoint_sensitivity", c) } }
@@ -78,5 +92,7 @@ class AutomationRepository(context: Context) {
     fun saveTrackpadMode(m: String) { _trackpadMode.value = m; p.edit { putString("trackpad_mode", m) } }
     fun saveLanguage(l: String) { _appLanguage.value = l; p.edit { putString("app_language", l) } }
     fun saveThemeMode(m: String) { _themeMode.value = m; p.edit { putString("theme_mode", m) } }
-    fun getActiveConfig() = _configs.value.getOrNull(_selectedIndex.value)?.let { AutomationConfig.fromString(it) }
+    
+    /** Retrieves the currently active profile. */
+    fun getActiveConfig() = _configs.value.getOrNull(_selectedIndex.value)
 }

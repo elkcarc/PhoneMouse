@@ -3,17 +3,21 @@ package com.example.phonemouse
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.content.res.ColorStateList
+import android.graphics.Canvas
 import android.graphics.Color
 import android.os.Bundle
 import android.provider.Settings
 import android.view.*
-import android.widget.ArrayAdapter
-import androidx.activity.enableEdgeToEdge
+import android.widget.*
+import androidx.activity.OnBackPressedCallback
 import androidx.activity.viewModels
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.content.ContextCompat
 import androidx.core.os.LocaleListCompat
 import androidx.core.view.*
+import androidx.drawerlayout.widget.DrawerLayout
 import androidx.lifecycle.*
 import androidx.recyclerview.widget.*
 import com.example.phonemouse.databinding.ActivityMainBinding
@@ -21,9 +25,6 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 /** Main entry point. Handles UI setup and renders state from the ViewModel. */
-import androidx.activity.OnBackPressedCallback
-import androidx.drawerlayout.widget.DrawerLayout
-
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private val viewModel: MainViewModel by viewModels()
@@ -32,7 +33,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var recordingAdapter: RecordingsAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
@@ -65,14 +65,28 @@ class MainActivity : AppCompatActivity() {
         })
     }
 
-    /** Sets up top-level click listeners and initializes child UI components. */
     private fun setupUI() {
         binding.toolbar.setNavigationOnClickListener { binding.drawerLayout.openDrawer(GravityCompat.START) }
         binding.statusBtn.setOnClickListener { startActivity(Intent(Settings.ACTION_BLUETOOTH_SETTINGS)) }
         
-        binding.autoclickerBtn.setOnClickListener { viewModel.toggleAutoclicker() }
-        binding.recordBtn.setOnClickListener { viewModel.toggleRecording() }
-        binding.playbackBtn.setOnClickListener { viewModel.togglePlayback() }
+        binding.autoclickerBtn.setOnClickListener { 
+            viewModel.setSettingsVisible(false)
+            viewModel.setActivePanel("Main")
+            binding.drawerLayout.closeDrawer(GravityCompat.START)
+            viewModel.toggleAutoclicker() 
+        }
+        binding.recordBtn.setOnClickListener { 
+            viewModel.setSettingsVisible(false)
+            viewModel.setActivePanel("Main")
+            binding.drawerLayout.closeDrawer(GravityCompat.START)
+            viewModel.toggleRecording() 
+        }
+        binding.playbackBtn.setOnClickListener { 
+            viewModel.setSettingsVisible(false)
+            viewModel.setActivePanel("Main")
+            binding.drawerLayout.closeDrawer(GravityCompat.START)
+            viewModel.togglePlayback() 
+        }
 
         binding.trackpad.setOnMoveListener { dx, dy -> viewModel.mouseHidService.value?.sendManualMove(dx, dy) }
 
@@ -89,7 +103,6 @@ class MainActivity : AppCompatActivity() {
         setupSettings()
     }
 
-    /** Configures touch listeners for manual mouse clicks and scroll buttons. */
     @SuppressLint("ClickableViewAccessibility")
     private fun setupMouseButtons() {
         val listener = View.OnTouchListener { v, e ->
@@ -97,17 +110,12 @@ class MainActivity : AppCompatActivity() {
             when (e.actionMasked) {
                 MotionEvent.ACTION_DOWN -> {
                     v.performClick()
-                    if (m != 0x00.toByte()) {
-                        viewModel.mouseHidService.value?.setButtonState(mask = m, pressed = true)
-                    } else {
-                        viewModel.mouseHidService.value?.sendManualScroll(delta = if (v.id == R.id.scrollUpBtn) 1 else -1)
-                    }
+                    if (m != 0x00.toByte()) viewModel.mouseHidService.value?.setButtonState(m, true)
+                    else viewModel.mouseHidService.value?.sendManualScroll(if (v.id == R.id.scrollUpBtn) 1 else -1)
                     v.isPressed = true
                 }
                 MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
-                    if (m != 0x00.toByte()) {
-                        viewModel.mouseHidService.value?.setButtonState(mask = m, pressed = false)
-                    }
+                    if (m != 0x00.toByte()) viewModel.mouseHidService.value?.setButtonState(m, false)
                     v.isPressed = false
                 }
             }
@@ -116,67 +124,119 @@ class MainActivity : AppCompatActivity() {
         listOf(binding.leftClickBtn, binding.rightClickBtn, binding.middleClickBtn, binding.scrollUpBtn, binding.scrollDownBtn).forEach { it.setOnTouchListener(listener) }
     }
 
-    /** Initializes the automation configurations and recordings lists. */
     private fun setupList() {
-        val configTouchHelper = ItemTouchHelper(object : ItemTouchHelper.SimpleCallback(ItemTouchHelper.UP or ItemTouchHelper.DOWN, 0) {
-            override fun onMove(r: RecyclerView, v: RecyclerView.ViewHolder, t: RecyclerView.ViewHolder): Boolean {
-                viewModel.moveConfig(v.adapterPosition, t.adapterPosition)
-                return true
+        val disallowIntercept = object : RecyclerView.OnItemTouchListener {
+            override fun onInterceptTouchEvent(rv: RecyclerView, e: MotionEvent): Boolean {
+                if (e.action == MotionEvent.ACTION_DOWN) rv.parent.requestDisallowInterceptTouchEvent(true)
+                return false
             }
-            override fun onSwiped(v: RecyclerView.ViewHolder, d: Int) {}
+            override fun onTouchEvent(rv: RecyclerView, e: MotionEvent) {}
+            override fun onRequestDisallowInterceptTouchEvent(d: Boolean) {}
+        }
+        binding.navDrawerMain.configsRecyclerView.addOnItemTouchListener(disallowIntercept)
+        binding.navDrawerMain.recordingsRecyclerView.addOnItemTouchListener(disallowIntercept)
+
+        // Profiles Swipe
+        val configTouchHelper = ItemTouchHelper(object : SwipeCallback() {
+            override fun onMove(r: RecyclerView, v: RecyclerView.ViewHolder, t: RecyclerView.ViewHolder) = true.also { viewModel.moveConfig(v.adapterPosition, t.adapterPosition) }
+            override fun onSwiped(v: RecyclerView.ViewHolder, d: Int) {
+                val pos = v.adapterPosition
+                if (d == ItemTouchHelper.LEFT) confirmDelete { viewModel.deleteConfig(pos) }
+                else showEditProfileDialog(pos)
+                configAdapter.notifyItemChanged(pos)
+            }
         })
         configTouchHelper.attachToRecyclerView(binding.navDrawerMain.configsRecyclerView)
-        
-        configAdapter = ConfigsAdapter(
-            list = emptyList<String>(),
-            selectedIndex = 0,
-            onSelected = { viewModel.selectConfig(it) },
-            onDeleted = { viewModel.deleteConfig(it) },
-            onDrag = { configTouchHelper.startDrag(it) }
-        )
-        binding.navDrawerMain.configsRecyclerView.apply {
-            layoutManager = LinearLayoutManager(this@MainActivity)
-            adapter = configAdapter
-        }
+        configAdapter = ConfigsAdapter(emptyList(), 0, { viewModel.selectConfig(it) }, { configTouchHelper.startDrag(it) })
+        binding.navDrawerMain.configsRecyclerView.apply { layoutManager = LinearLayoutManager(this@MainActivity); adapter = configAdapter }
 
-        val recordingTouchHelper = ItemTouchHelper(object : ItemTouchHelper.SimpleCallback(ItemTouchHelper.UP or ItemTouchHelper.DOWN, 0) {
-            override fun onMove(r: RecyclerView, v: RecyclerView.ViewHolder, t: RecyclerView.ViewHolder): Boolean {
-                viewModel.moveRecording(v.adapterPosition, t.adapterPosition)
-                return true
+        // Recordings Swipe
+        val recordingTouchHelper = ItemTouchHelper(object : SwipeCallback() {
+            override fun onMove(r: RecyclerView, v: RecyclerView.ViewHolder, t: RecyclerView.ViewHolder) = true.also { viewModel.moveRecording(v.adapterPosition, t.adapterPosition) }
+            override fun onSwiped(v: RecyclerView.ViewHolder, d: Int) {
+                val pos = v.adapterPosition
+                if (d == ItemTouchHelper.LEFT) confirmDelete { viewModel.deleteRecording(pos) }
+                else showEditRecordingDialog(pos)
+                recordingAdapter.notifyItemChanged(pos)
             }
-            override fun onSwiped(v: RecyclerView.ViewHolder, d: Int) {}
         })
         recordingTouchHelper.attachToRecyclerView(binding.navDrawerMain.recordingsRecyclerView)
+        recordingAdapter = RecordingsAdapter(emptyList(), 0, { viewModel.selectRecording(it) }, { recordingTouchHelper.startDrag(it) })
+        binding.navDrawerMain.recordingsRecyclerView.apply { layoutManager = LinearLayoutManager(this@MainActivity); adapter = recordingAdapter }
+    }
 
-        recordingAdapter = RecordingsAdapter(
-            list = emptyList<InputRecording>(),
-            selectedIndex = 0,
-            onSelected = { viewModel.selectRecording(it) },
-            onRename = { showRenameDialog(it) },
-            onDeleted = { viewModel.deleteRecording(it) },
-            onDrag = { recordingTouchHelper.startDrag(it) }
-        )
-        binding.navDrawerMain.recordingsRecyclerView.apply {
-            layoutManager = LinearLayoutManager(this@MainActivity)
-            adapter = recordingAdapter
+    /** Base class for swipe actions with visual background reveals. */
+    private abstract inner class SwipeCallback : ItemTouchHelper.SimpleCallback(ItemTouchHelper.UP or ItemTouchHelper.DOWN, ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT) {
+        private val deleteColor = Color.parseColor("#E53935")
+        private val editColor = Color.parseColor("#43A047")
+        private val deleteIcon = ContextCompat.getDrawable(this@MainActivity, R.drawable.ic_close)!!.apply { setTint(Color.WHITE) }
+        private val editIcon = ContextCompat.getDrawable(this@MainActivity, R.drawable.ic_edit)!!.apply { setTint(Color.WHITE) }
+
+        override fun onChildDraw(c: Canvas, recyclerView: RecyclerView, viewHolder: RecyclerView.ViewHolder, dX: Float, dY: Float, actionState: Int, isCurrentlyActive: Boolean) {
+            val itemView = viewHolder.itemView
+            val iconMargin = (itemView.height - deleteIcon.intrinsicHeight) / 2
+            val iconTop = itemView.top + iconMargin
+            val iconBottom = iconTop + deleteIcon.intrinsicHeight
+
+            val background = android.graphics.drawable.ColorDrawable()
+            if (dX > 0) { // Swipe Right (Edit)
+                background.color = editColor
+                background.setBounds(itemView.left, itemView.top, itemView.left + dX.toInt(), itemView.bottom)
+                val iconLeft = itemView.left + iconMargin
+                val iconRight = iconLeft + editIcon.intrinsicWidth
+                editIcon.setBounds(iconLeft, iconTop, iconRight, iconBottom)
+                background.draw(c)
+                if (dX > iconMargin) editIcon.draw(c)
+            } else if (dX < 0) { // Swipe Left (Delete)
+                background.color = deleteColor
+                background.setBounds(itemView.right + dX.toInt(), itemView.top, itemView.right, itemView.bottom)
+                val iconRight = itemView.right - iconMargin
+                val iconLeft = iconRight - deleteIcon.intrinsicWidth
+                deleteIcon.setBounds(iconLeft, iconTop, iconRight, iconBottom)
+                background.draw(c)
+                if (Math.abs(dX) > iconMargin) deleteIcon.draw(c)
+            }
+            super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive)
         }
     }
 
-    /** Shows a dialog to rename a specific recording. */
-    private fun showRenameDialog(index: Int) {
-        val recording = viewModel.uiState.value.recordings.getOrNull(index) ?: return
-        val input = android.widget.EditText(this).apply { setText(recording.name) }
-        androidx.appcompat.app.AlertDialog.Builder(this)
-            .setTitle(R.string.rename_recording)
-            .setView(input)
-            .setPositiveButton(R.string.save) { _, _ ->
-                viewModel.renameRecording(index, input.text.toString())
-            }
-            .setNegativeButton(R.string.cancel, null)
-            .show()
+    private fun confirmDelete(onConfirm: () -> Unit) {
+        if (!viewModel.uiState.value.confirmDelete) return onConfirm()
+        AlertDialog.Builder(this).setTitle(R.string.confirm_delete_title).setMessage(R.string.confirm_delete_message)
+            .setPositiveButton(R.string.delete_recording) { _, _ -> onConfirm() }.setNegativeButton(R.string.cancel, null).show()
     }
 
-    /** Handles navigation between the main variations drawer and settings drawer. */
+    private fun showEditProfileDialog(index: Int) {
+        val cfg = viewModel.uiState.value.configs.getOrNull(index) ?: return
+        val dialogView = layoutInflater.inflate(R.layout.dialog_edit_profile, null)
+        val nameInput = dialogView.findViewById<EditText>(R.id.editName).apply { setText(cfg.name) }
+        val minI = dialogView.findViewById<EditText>(R.id.editMinInt).apply { setText(cfg.minInterval.toString()) }
+        val maxI = dialogView.findViewById<EditText>(R.id.editMaxInt).apply { setText(cfg.maxInterval.toString()) }
+        val minP = dialogView.findViewById<EditText>(R.id.editMinPress).apply { setText(cfg.minPressDuration.toString()) }
+        val maxP = dialogView.findViewById<EditText>(R.id.editMaxPress).apply { setText(cfg.maxPressDuration.toString()) }
+        val minB = dialogView.findViewById<EditText>(R.id.editMinBreak).apply { setText(cfg.minBreakDelay.toString()) }
+        val maxB = dialogView.findViewById<EditText>(R.id.editMaxBreak).apply { setText(cfg.maxBreakDelay.toString()) }
+        val freq = dialogView.findViewById<EditText>(R.id.editFreq).apply { setText(cfg.delayFrequency.toString()) }
+
+        AlertDialog.Builder(this).setTitle(R.string.edit_profile).setView(dialogView)
+            .setPositiveButton(R.string.save) { _, _ ->
+                viewModel.updateConfig(index, nameInput.text.toString(), minI.text.toString().toIntOrNull() ?: 100, maxI.text.toString().toIntOrNull() ?: 300, minP.text.toString().toIntOrNull() ?: 50, maxP.text.toString().toIntOrNull() ?: 150, minB.text.toString().toIntOrNull() ?: 3000, maxB.text.toString().toIntOrNull() ?: 60000, freq.text.toString().toIntOrNull() ?: 500)
+            }.setNegativeButton(R.string.cancel, null).show()
+    }
+
+    private fun showEditRecordingDialog(index: Int) {
+        val rec = viewModel.uiState.value.recordings.getOrNull(index) ?: return
+        val dialogView = layoutInflater.inflate(R.layout.dialog_edit_recording, null)
+        val nameInput = dialogView.findViewById<EditText>(R.id.editRecName).apply { setText(rec.name) }
+        val loopToggle = dialogView.findViewById<com.google.android.material.switchmaterial.SwitchMaterial>(R.id.loopPlaybackToggle).apply { isChecked = rec.loopPlayback }
+
+        AlertDialog.Builder(this).setTitle(R.string.rename_recording).setView(dialogView)
+            .setPositiveButton(R.string.save) { _, _ ->
+                viewModel.renameRecording(index, nameInput.text.toString())
+                viewModel.updateRecordingLoop(index, loopToggle.isChecked)
+            }.setNegativeButton(R.string.cancel, null).show()
+    }
+
     private fun setupDrawer() {
         binding.navDrawerMain.apply {
             profilesBtn.setOnClickListener { viewModel.setActivePanel("Profiles") }
@@ -188,7 +248,6 @@ class MainActivity : AppCompatActivity() {
         binding.navDrawerSettings.settingsBackBtn.setOnClickListener { viewModel.setSettingsVisible(false) }
     }
 
-    /** Sets up input listeners for theme, language, mode, and sensitivity settings. */
     private fun setupSettings() {
         binding.navDrawerSettings.apply {
             themeDropdown.setOnItemClickListener { _, _, p, _ -> viewModel.setThemeMode(arrayOf("Auto", "Dark", "Light")[p]) }
@@ -196,23 +255,21 @@ class MainActivity : AppCompatActivity() {
             trackpadModeDropdown.setOnItemClickListener { _, _, p, _ -> viewModel.setTrackpadMode(arrayOf("Trackpad", "Trackpoint")[p]) }
             trailToggle.setOnCheckedChangeListener { _, c -> viewModel.setTrailEnabled(c) }
             trackpointAnimationToggle.setOnCheckedChangeListener { _, c -> viewModel.setTrackpointAnimationEnabled(c) }
+            confirmDeleteToggle.setOnCheckedChangeListener { _, c -> viewModel.setConfirmDelete(c) }
             trackpadSensitivitySlider.addOnChangeListener { _, v, f -> if (f) viewModel.setTrackpadSensitivity(v) }
             trackpointSensitivitySlider.addOnChangeListener { _, v, f -> if (f) viewModel.setTrackpointSensitivity(v) }
         }
         binding.navDrawerMain.apply {
-            addVariationBtn.setOnClickListener { addVariationBtn.isVisible = false; addConfigCard.isVisible = true }
-            cancelAddBtn.setOnClickListener { resetAdd() }
-            confirmAddBtn.setOnClickListener {
-                viewModel.addConfig(AutomationConfig(minIntInput.text.toString().toIntOrNull() ?: getString(R.string.default_min_int).toInt(), maxIntInput.text.toString().toIntOrNull() ?: getString(R.string.default_max_int).toInt(), minPressInput.text.toString().toIntOrNull() ?: getString(R.string.default_min_press).toInt(), maxPressInput.text.toString().toIntOrNull() ?: getString(R.string.default_min_press).toInt(), minBreakInput.text.toString().toIntOrNull() ?: getString(R.string.default_min_break).toInt(), maxBreakInput.text.toString().toIntOrNull() ?: getString(R.string.default_max_break).toInt(), delayFreqInput.text.toString().toIntOrNull() ?: getString(R.string.default_freq).toInt()))
-                resetAdd()
+            addVariationBtn.setOnClickListener { 
+                viewModel.addConfig("Autoclicker Profile", 100, 300, 50, 150, 3000, 60000, 500)
+                showEditProfileDialog(configAdapter.itemCount - 1)
             }
         }
     }
 
-    /** Helper to initialize a dropdown menu with correctly localized items. */
-    private fun setupSpinner(v: android.widget.AutoCompleteTextView, items: Array<String>, idx: Int) {
+    private fun setupSpinner(v: AutoCompleteTextView, items: Array<String>, idx: Int) {
         v.setAdapter(object : ArrayAdapter<String>(this, android.R.layout.simple_spinner_dropdown_item, items) {
-            override fun getFilter() = object : android.widget.Filter() {
+            override fun getFilter() = object : Filter() {
                 override fun performFiltering(c: CharSequence?) = FilterResults().apply { values = items; count = items.size }
                 override fun publishResults(c: CharSequence?, r: FilterResults?) { notifyDataSetChanged() }
             }
@@ -220,23 +277,11 @@ class MainActivity : AppCompatActivity() {
         v.setText(items[idx.coerceAtLeast(0)], false)
     }
 
-    /** Clears the "Add Variation" form fields and resets visibility. */
-    private fun resetAdd() {
-        binding.navDrawerMain.apply {
-            listOf(minIntInput to R.string.default_min_int, maxIntInput to R.string.default_max_int, minPressInput to R.string.default_min_press, maxPressInput to R.string.default_max_press, minBreakInput to R.string.default_min_break, maxBreakInput to R.string.default_max_break, delayFreqInput to R.string.default_freq).forEach { it.first.setText(getString(it.second)) }
-            addVariationBtn.isVisible = true; addConfigCard.isVisible = false
-        }
-    }
-
-    /** Updates all UI elements based on the unified [MainUiState]. */
     private fun render(s: MainUiState) {
         binding.navDrawerMain.root.isVisible = !s.isSettingsVisible
         binding.navDrawerSettings.root.isVisible = s.isSettingsVisible
-        if (s.isSettingsVisible && !binding.drawerLayout.isDrawerOpen(GravityCompat.START)) {
-            binding.drawerLayout.openDrawer(GravityCompat.START, false)
-        }
+        if (s.isSettingsVisible && !binding.drawerLayout.isDrawerOpen(GravityCompat.START)) binding.drawerLayout.openDrawer(GravityCompat.START, false)
 
-        // Drawer Panels
         binding.navDrawerMain.apply {
             mainNavPanel.isVisible = s.activePanel == "Main"
             profilesPanel.isVisible = s.activePanel == "Profiles"
@@ -250,28 +295,25 @@ class MainActivity : AppCompatActivity() {
         
         binding.autoclickerBtn.apply {
             isEnabled = s.isConnected && !s.isRecording && !s.isPlaying
-            text = getString(if (s.isAutoclickerRunning) R.string.stop_autoclicker else R.string.start_autoclicker)
-            backgroundTintList = ColorStateList.valueOf(if (s.isAutoclickerRunning) Color.RED else Color.LTGRAY)
+            setIconResource(if (s.isAutoclickerRunning) R.drawable.ic_stop_circle else R.drawable.ic_ads_click)
+            iconTint = ColorStateList.valueOf(if (s.isAutoclickerRunning) Color.RED else Color.BLACK)
         }
         
         binding.recordBtn.apply {
             isEnabled = s.isConnected && !s.isAutoclickerRunning && !s.isPlaying
-            text = getString(if (s.isRecording) R.string.stop_recording else R.string.record_input)
-            backgroundTintList = ColorStateList.valueOf(if (s.isRecording) Color.RED else Color.LTGRAY)
+            setIconResource(if (s.isRecording) R.drawable.ic_stop_circle else R.drawable.ic_screen_record)
+            iconTint = ColorStateList.valueOf(if (s.isRecording) Color.RED else Color.BLACK)
         }
         
         binding.playbackBtn.apply {
             isEnabled = s.isConnected && s.hasRecording && !s.isAutoclickerRunning && !s.isRecording
-            text = getString(if (s.isPlaying) R.string.stop_playback else R.string.playback)
-            backgroundTintList = ColorStateList.valueOf(if (s.isPlaying) Color.RED else Color.LTGRAY)
+            setIconResource(if (s.isPlaying) R.drawable.ic_stop_circle else R.drawable.ic_play_circle)
+            iconTint = ColorStateList.valueOf(if (s.isPlaying) Color.RED else Color.BLACK)
         }
 
         binding.trackpad.apply {
-            mode = s.trackpadMode
-            trackpadSensitivity = s.trackpadSensitivity
-            trackpointSensitivity = s.trackpointSensitivity
-            isTrailEnabled = s.isTrackpadMode && s.isTrailEnabled
-            isTrackpointAnimationEnabled = (!s.isTrackpadMode) && s.isTrackpointAnimationEnabled
+            mode = s.trackpadMode; trackpadSensitivity = s.trackpadSensitivity; trackpointSensitivity = s.trackpointSensitivity
+            isTrailEnabled = s.isTrackpadMode && s.isTrailEnabled; isTrackpointAnimationEnabled = (!s.isTrackpadMode) && s.isTrackpointAnimationEnabled
         }
 
         binding.navDrawerSettings.apply {
@@ -296,14 +338,12 @@ class MainActivity : AppCompatActivity() {
             trackpointAnimationToggle.isEnabled = s.isTrackpointAnimationControlEnabled; trackpointAnimationCard.alpha = s.trackpointSettingsAlpha
             if (trackpointAnimationToggle.isChecked != s.isTrackpointAnimationEnabled) trackpointAnimationToggle.isChecked = s.isTrackpointAnimationEnabled
             trackpointAnimationToggle.text = getString(R.string.trackpoint_animation)
+            
+            if (confirmDeleteToggle.isChecked != s.confirmDelete) confirmDeleteToggle.isChecked = s.confirmDelete
 
             settingsTitleText.text = getString(R.string.settings); settingsBackBtn.text = getString(R.string.back)
         }
-        binding.navDrawerMain.apply { 
-            profilesBtn.text = getString(R.string.autoclicker_profiles)
-            recordingsBtn.text = getString(R.string.input_recordings)
-            settingsBtn.text = getString(R.string.settings)
-        }
+        binding.navDrawerMain.apply { profilesBtn.text = getString(R.string.autoclicker_profiles); recordingsBtn.text = getString(R.string.input_recordings); settingsBtn.text = getString(R.string.settings) }
 
         configAdapter.update(s.configs, s.selectedConfigIndex)
         recordingAdapter.update(s.recordings, s.selectedRecordingIndex)
@@ -311,39 +351,30 @@ class MainActivity : AppCompatActivity() {
         applyTheme(s.themeMode); applyLanguage(s.appLanguage)
     }
 
-    /** Synchronizes the app's light/dark mode with user preference. */
     private fun applyTheme(m: String) {
         val n = when (m) { "Dark" -> AppCompatDelegate.MODE_NIGHT_YES; "Light" -> AppCompatDelegate.MODE_NIGHT_NO; else -> AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM }
         if (AppCompatDelegate.getDefaultNightMode() != n) AppCompatDelegate.setDefaultNightMode(n)
     }
 
-    /** Synchronizes the app's display language with user preference. */
     private fun applyLanguage(l: String) {
         val al = LocaleListCompat.forLanguageTags(l)
         if (AppCompatDelegate.getApplicationLocales().toLanguageTags() != al.toLanguageTags()) AppCompatDelegate.setApplicationLocales(al)
     }
 
-    /** Adjusts layout padding to account for system status and navigation bars. */
     private fun setupInsets() {
         ViewCompat.setOnApplyWindowInsetsListener(binding.drawerLayout) { _, insets ->
             val sys = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             val d = resources.displayMetrics.density; val p24 = (24 * d).toInt()
             binding.toolbar.updatePadding(top = sys.top); binding.bottomControls.updatePadding(bottom = sys.bottom)
-            
-            // Drawer Panels Insets
             binding.navDrawerMain.mainDrawerPanel.updatePadding(top = sys.top)
             binding.navDrawerMain.mainNavPanel.updatePadding(bottom = sys.bottom + p24)
             binding.navDrawerMain.profilesPanel.updatePadding(bottom = sys.bottom + p24)
             binding.navDrawerMain.recordingsPanel.updatePadding(bottom = sys.bottom + p24)
-            
-            // Drawer Settings Insets
             binding.navDrawerSettings.settingsDrawerPanel.updatePadding(top = sys.top, bottom = sys.bottom + p24)
-            
             insets
         }
     }
 
-    /** Triggers profile registration if Bluetooth permissions were just granted. */
     override fun onRequestPermissionsResult(rc: Int, p: Array<out String>, gr: IntArray) {
         super.onRequestPermissionsResult(rc, p, gr)
         if (rc == BluetoothPermissionManager.REQUEST_CODE_BLUETOOTH_PERMISSIONS && (gr.all { it == android.content.pm.PackageManager.PERMISSION_GRANTED })) {

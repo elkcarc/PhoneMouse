@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="24dp">
+
+    <EditText
+        android:id="@+id/editRecName"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="@string/recording_default_name"
+        android:inputType="text" />
+
+    <com.google.android.material.switchmaterial.SwitchMaterial
+        android:id="@+id/loopPlaybackToggle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:minHeight="48dp"
+        android:text="@string/loop_playback"
+        android:textColor="?android:attr/textColorPrimary" />
+
+</LinearLayout>

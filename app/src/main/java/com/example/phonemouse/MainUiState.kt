@@ -8,10 +8,11 @@ data class MainUiState(
     val isRecording: Boolean = false,
     val isPlaying: Boolean = false,
     val hasRecording: Boolean = false,
-    val configs: List<String> = emptyList(),
+    val configs: List<AutomationConfig> = emptyList(),
     val selectedConfigIndex: Int = 0,
     val recordings: List<InputRecording> = emptyList(),
     val selectedRecordingIndex: Int = 0,
+    val confirmDelete: Boolean = true,
     val activePanel: String = "Main", // "Main", "Profiles", "Recordings"
     val appLanguage: String = "en",
     val themeMode: String = "Auto",

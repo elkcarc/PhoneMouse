@@ -115,11 +115,11 @@ class MouseHidService(private val context: Context) {
         }
     }
 
-    fun togglePlayback(data: String?) {
-        if (_isPlaying.value) stopPlayback() else startPlayback(data)
+    fun togglePlayback(data: String?, loop: Boolean = false) {
+        if (_isPlaying.value) stopPlayback() else startPlayback(data, loop)
     }
 
-    private fun startPlayback(data: String?) {
+    private fun startPlayback(data: String?, loop: Boolean) {
         if (data.isNullOrEmpty() || host == null) return
         val events = data.split(";").mapNotNull {
             try {
@@ -133,18 +133,25 @@ class MouseHidService(private val context: Context) {
         _isPlaying.value = true
         stopAuto()
         
-        val playbackStartTime = SystemClock.elapsedRealtime()
-        events.forEach { event ->
+        fun runEvents() {
+            events.forEach { event ->
+                handler.postDelayed({
+                    if (_isPlaying.value) sendReportInternal(event.second)
+                }, event.first)
+            }
+            val totalDuration = events.last().first
             handler.postDelayed({
-                if (_isPlaying.value) sendReportInternal(event.second)
-            }, event.first)
+                if (_isPlaying.value) {
+                    if (loop) runEvents() else _isPlaying.value = false
+                }
+            }, totalDuration + 100)
         }
-        handler.postDelayed({ _isPlaying.value = false }, events.last().first + 100)
+        runEvents()
     }
 
     private fun stopPlayback() {
         _isPlaying.value = false
-        handler.removeCallbacksAndMessages(null) // Careful with this
+        handler.removeCallbacksAndMessages(null)
     }
 
     @SuppressLint("MissingPermission")

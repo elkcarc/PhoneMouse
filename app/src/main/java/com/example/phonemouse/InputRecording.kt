@@ -8,7 +8,8 @@ data class InputRecording(
     val timestamp: Long,
     val durationMs: Long,
     val clickCount: Int,
-    val data: String // Semicolon-separated timing/report data
+    val data: String, // Semicolon-separated timing/report data
+    val loopPlayback: Boolean = true
 ) {
     /** Serializes the recording into a JSON string for persistence. */
     fun toJson(): String {
@@ -18,6 +19,7 @@ data class InputRecording(
             put("duration", durationMs)
             put("clicks", clickCount)
             put("data", data)
+            put("loop", loopPlayback)
         }.toString()
     }
 
@@ -31,7 +33,8 @@ data class InputRecording(
                     obj.getLong("timestamp"),
                     obj.getLong("duration"),
                     obj.getInt("clicks"),
-                    obj.getString("data")
+                    obj.getString("data"),
+                    obj.optBoolean("loop", true)
                 )
             } catch (_: Exception) { null }
         }

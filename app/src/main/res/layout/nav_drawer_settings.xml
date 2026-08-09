@@ -260,6 +260,7 @@
         android:id="@+id/trackpointAnimationCard"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp"
         app:cardCornerRadius="16dp"
         app:cardElevation="4dp">
 
@@ -276,6 +277,30 @@
                 android:minHeight="48dp"
                 android:checked="true"
                 android:text="@string/trackpoint_animation"
+                android:textColor="?android:attr/textColorPrimary" />
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- Deletion Confirmation Toggle -->
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:cardCornerRadius="16dp"
+        app:cardElevation="4dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <com.google.android.material.switchmaterial.SwitchMaterial
+                android:id="@+id/confirmDeleteToggle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="48dp"
+                android:checked="true"
+                android:text="@string/confirm_delete_setting"
                 android:textColor="?android:attr/textColorPrimary" />
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
