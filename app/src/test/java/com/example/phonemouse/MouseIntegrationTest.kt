@@ -31,6 +31,10 @@ class MouseIntegrationTest {
             postedRunnables.add(firstArg<Runnable>())
             true 
         }
+        every { handler.postDelayed(any(), any()) } answers {
+            postedRunnables.add(firstArg<Runnable>())
+            true
+        }
     }
 
     private fun pumpRunnables() {
