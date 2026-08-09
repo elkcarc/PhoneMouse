@@ -74,4 +74,7 @@
     <string name="theme_light">ライト</string>
     <string name="foreground_service_notification_title">PhoneMouse 有効</string>
     <string name="foreground_service_notification_description">Bluetooth HID 接続を維持しています</string>
+    <string name="permissions_denied">アクセス許可が拒否されました。マウス機能を使用するには許可してください。</string>
+    <string name="permissions_required_tap_to_grant">許可が必要です (タップして許可)</string>
+    <string name="bluetooth_disabled_tap_to_enable">Bluetoothが無効です (タップして有効にする)</string>
 </resources>

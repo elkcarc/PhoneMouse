@@ -74,4 +74,7 @@
     <string name="theme_light">Светлая</string>
     <string name="foreground_service_notification_title">PhoneMouse Активен</string>
     <string name="foreground_service_notification_description">Поддержание Bluetooth HID соединения</string>
+    <string name="permissions_denied">В разрешении отказано. Пожалуйста, предоставьте разрешения для использования функций мыши.</string>
+    <string name="permissions_required_tap_to_grant">Требуются разрешения (нажмите, чтобы предоставить)</string>
+    <string name="bluetooth_disabled_tap_to_enable">Bluetooth отключен (нажмите, чтобы включить)</string>
 </resources>

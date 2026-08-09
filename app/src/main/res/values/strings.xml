@@ -74,4 +74,7 @@
     <string name="theme_light">Light</string>
     <string name="foreground_service_notification_title">PhoneMouse Active</string>
     <string name="foreground_service_notification_description">Maintaining Bluetooth HID Connection</string>
+    <string name="permissions_denied">Permissions denied. Please grant them to use the mouse features.</string>
+    <string name="permissions_required_tap_to_grant">Permissions Required (Tap to Grant)</string>
+    <string name="bluetooth_disabled_tap_to_enable">Bluetooth Disabled (Tap to Enable)</string>
 </resources>

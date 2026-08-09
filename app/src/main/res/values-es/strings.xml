@@ -74,4 +74,7 @@
     <string name="theme_light">Claro</string>
     <string name="foreground_service_notification_title">PhoneMouse Activo</string>
     <string name="foreground_service_notification_description">Manteniendo la conexión Bluetooth HID</string>
+    <string name="permissions_denied">Permisos denegados. Por favor, concédalos para usar las funciones del ratón.</string>
+    <string name="permissions_required_tap_to_grant">Permisos requeridos (toque para conceder)</string>
+    <string name="bluetooth_disabled_tap_to_enable">Bluetooth desactivado (toca para activar)</string>
 </resources>

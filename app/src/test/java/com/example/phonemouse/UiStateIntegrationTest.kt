@@ -16,13 +16,17 @@ class UiStateIntegrationTest {
     }
 
     @Test
-    fun `MainUiState calculates control button properties correctly`() {
-        // Test Autoclicker Running state
-        val activeState = MainUiState(isConnected = true, isAutoclickerRunning = true)
-        
-        // We can't easily test 'render' logic in unit tests without robolectric/ui tests,
-        // but we can verify the state that drives it.
-        assertEquals(true, activeState.isAutoclickerRunning)
-        assertEquals(true, activeState.isConnected)
+    fun `MainUiState calculates status text correctly based on permissions`() {
+        val noPerms = MainUiState(hasPermissions = false)
+        assertEquals(R.string.permissions_required_tap_to_grant, noPerms.statusTextRes)
+
+        val noBt = MainUiState(hasPermissions = true, isBluetoothEnabled = false)
+        assertEquals(R.string.bluetooth_disabled_tap_to_enable, noBt.statusTextRes)
+
+        val disconnected = MainUiState(hasPermissions = true, isBluetoothEnabled = true, isConnected = false)
+        assertEquals(R.string.disconnected_tap_to_open_bluetooth_settings, disconnected.statusTextRes)
+
+        val connected = MainUiState(hasPermissions = true, isBluetoothEnabled = true, isConnected = true)
+        assertEquals(R.string.connected, connected.statusTextRes)
     }
 }

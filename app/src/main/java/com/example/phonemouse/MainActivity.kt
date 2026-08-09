@@ -46,13 +46,17 @@ class MainActivity : AppCompatActivity() {
                 viewModel.uiState.collectLatest { render(it) } 
             } 
         }
-        if (perms.hasPermissions()) {
-            if (perms.isBluetoothEnabled()) viewModel.startService()
-            else perms.requestBluetoothEnable()
-        } else {
-            perms.requestPermissions()
+        // Auto-start service only if we already have full permissions and hardware is active
+        if (perms.hasPermissions() && perms.isBluetoothEnabled()) {
+            viewModel.startService()
         }
         setupInsets()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        viewModel.updatePermissionState(perms.hasPermissions())
+        viewModel.updateBluetoothState(perms.isBluetoothEnabled())
     }
 
     private fun setupBackNavigation() {
@@ -82,7 +86,15 @@ class MainActivity : AppCompatActivity() {
 
     private fun setupUI() {
         binding.toolbar.setNavigationOnClickListener { binding.drawerLayout.openDrawer(GravityCompat.START) }
-        binding.statusBtn.setOnClickListener { startActivity(Intent(Settings.ACTION_BLUETOOTH_SETTINGS)) }
+        
+        binding.statusBtn.setOnClickListener { 
+            when {
+                !perms.hasPermissions() -> perms.requestPermissions()
+                !perms.isBluetoothEnabled() -> perms.requestBluetoothEnable()
+                !viewModel.uiState.value.isConnected -> viewModel.startService()
+                else -> startActivity(Intent(Settings.ACTION_BLUETOOTH_SETTINGS))
+            }
+        }
         
         binding.autoclickerBtn.setOnClickListener { 
             binding.drawerLayout.closeDrawer(GravityCompat.START)
@@ -170,7 +182,7 @@ class MainActivity : AppCompatActivity() {
         configAdapter = ConfigsAdapter(
             list = emptyList(), 
             selectedIndex = 0, 
-            onClick = { pos -> viewModel.selectConfig(pos); dialogs.showEditProfileDialog(pos) }
+            onClick = { pos -> viewModel.selectConfig(pos) }
         ) { configTouchHelper.startDrag(it) }
         binding.navDrawerMain.configsRecyclerView.apply { layoutManager = LinearLayoutManager(this@MainActivity); adapter = configAdapter }
 
@@ -192,7 +204,7 @@ class MainActivity : AppCompatActivity() {
         recordingAdapter = RecordingsAdapter(
             list = emptyList(), 
             selectedIndex = 0, 
-            onClick = { pos -> viewModel.selectRecording(pos); dialogs.showEditRecordingDialog(pos) }
+            onClick = { pos -> viewModel.selectRecording(pos) }
         ) { recordingTouchHelper.startDrag(it) }
         binding.navDrawerMain.recordingsRecyclerView.apply { layoutManager = LinearLayoutManager(this@MainActivity); adapter = recordingAdapter }
     }
@@ -306,7 +318,12 @@ class MainActivity : AppCompatActivity() {
         }
 
         binding.statusBtn.apply {
-            backgroundTintList = ColorStateList.valueOf(if (s.isConnected) Color.GREEN else Color.GRAY)
+            val statusColor = when {
+                !s.hasPermissions || !s.isBluetoothEnabled -> Color.RED
+                s.isConnected -> Color.GREEN
+                else -> Color.GRAY
+            }
+            backgroundTintList = ColorStateList.valueOf(statusColor)
             text = if (s.isConnected && (s.connectedDeviceName != null)) getString(R.string.connected_to, s.connectedDeviceName) else getString(s.statusTextRes)
         }
         
@@ -416,9 +433,11 @@ class MainActivity : AppCompatActivity() {
 
     override fun onRequestPermissionsResult(rc: Int, p: Array<out String>, gr: IntArray) {
         super.onRequestPermissionsResult(rc, p, gr)
-        if ((rc == BluetoothPermissionManager.REQUEST_CODE_BLUETOOTH_PERMISSIONS) && (gr.all { it == android.content.pm.PackageManager.PERMISSION_GRANTED })) {
-            if (perms.isBluetoothEnabled()) viewModel.startService()
-            else perms.requestBluetoothEnable()
+        if (rc == BluetoothPermissionManager.REQUEST_CODE_BLUETOOTH_PERMISSIONS) {
+            if (gr.isNotEmpty() && gr.all { it == android.content.pm.PackageManager.PERMISSION_GRANTED }) {
+                if (perms.isBluetoothEnabled()) viewModel.startService()
+                else perms.requestBluetoothEnable()
+            }
         }
     }
 }

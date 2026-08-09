@@ -62,7 +62,7 @@
                 app:iconGravity="textStart"
                 app:iconPadding="0dp"
                 app:iconSize="32dp"
-                app:iconTint="?attr/controlIconColor" />
+                app:iconTint="@null" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/recordBtn"
@@ -79,7 +79,7 @@
                 app:iconGravity="textStart"
                 app:iconPadding="0dp"
                 app:iconSize="32dp"
-                app:iconTint="?attr/controlIconColor" />
+                app:iconTint="@null" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/playbackBtn"
@@ -96,7 +96,7 @@
                 app:iconGravity="textStart"
                 app:iconPadding="0dp"
                 app:iconSize="32dp"
-                app:iconTint="?attr/controlIconColor" />
+                app:iconTint="@null" />
         </LinearLayout>
 
         <com.example.phonemouse.TrackpadView
@@ -145,7 +145,7 @@
                     app:icon="@drawable/ic_arrow_upward"
                     app:iconGravity="textStart"
                     app:iconPadding="0dp"
-                    app:iconTint="?attr/controlIconColor" />
+                    app:iconTint="@null" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/middleClickBtn"
@@ -161,7 +161,7 @@
                     app:icon="@drawable/ic_mouse_middle"
                     app:iconGravity="textStart"
                     app:iconPadding="0dp"
-                    app:iconTint="?attr/controlIconColor" />
+                    app:iconTint="@null" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/scrollDownBtn"
@@ -177,7 +177,7 @@
                     app:icon="@drawable/ic_arrow_downward"
                     app:iconGravity="textStart"
                     app:iconPadding="0dp"
-                    app:iconTint="?attr/controlIconColor" />
+                    app:iconTint="@null" />
             </LinearLayout>
 
             <LinearLayout
@@ -199,7 +199,7 @@
                     app:icon="@drawable/mouse_left_click"
                     app:iconGravity="textStart"
                     app:iconPadding="0dp"
-                    app:iconTint="?attr/controlIconColor" />
+                    app:iconTint="@null" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/rightClickBtn"
@@ -215,7 +215,7 @@
                     app:icon="@drawable/mouse_right_click"
                     app:iconGravity="textStart"
                     app:iconPadding="0dp"
-                    app:iconTint="?attr/controlIconColor" />
+                    app:iconTint="@null" />
             </LinearLayout>
         </LinearLayout>
     </LinearLayout>

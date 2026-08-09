@@ -20,7 +20,7 @@ class FunctionalIntegrationTest {
     private val app = mockk<Application>(relaxed = true)
     private val repo = mockk<AutomationRepository>(relaxed = true)
     private val settings = mockk<SettingsRepository>(relaxed = true)
-    private val hidManager = mockk<HidServiceManager>(relaxed = true)
+    private val hidManager = mockk<HidManager>(relaxed = true)
     
     private val mockHid = mockk<BluetoothHidDevice>(relaxed = true)
     private val mockHost = mockk<BluetoothDevice>(relaxed = true)

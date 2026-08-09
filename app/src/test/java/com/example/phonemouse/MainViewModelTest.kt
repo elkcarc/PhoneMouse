@@ -21,7 +21,7 @@ class MainViewModelTest {
     private val app = mockk<Application>(relaxed = true)
     private val repo = mockk<AutomationRepository>(relaxed = true)
     private val settings = mockk<SettingsRepository>(relaxed = true)
-    private val hid = mockk<HidServiceManager>(relaxed = true)
+    private val hid = mockk<HidManager>(relaxed = true)
     private val serviceFlow = MutableStateFlow<MouseHidService?>(null)
     private lateinit var viewModel: MainViewModel
 
@@ -223,5 +223,45 @@ class MainViewModelTest {
         viewModel.updateRecordingLoop(0, true)
         
         verify { repo.saveRecordings(match { it[0].loopPlayback }) }
+    }
+
+    @Test
+    fun `settings updates call repository`() {
+        viewModel.setThemeMode("Dark")
+        verify { settings.saveThemeMode("Dark") }
+        
+        viewModel.setLanguage("es")
+        verify { settings.saveLanguage("es") }
+        
+        viewModel.setTrackpadSensitivity(5.0f)
+        verify { settings.saveTrackpadSensitivity(5.0f) }
+        
+        viewModel.setConfirmDelete(false)
+        verify { settings.saveConfirmDelete(false) }
+    }
+
+    @Test
+    fun `updatePermissionState updates UI state`() = runTest {
+        viewModel.uiState.test {
+            val initialState = awaitItem()
+            assertEquals(true, initialState.hasPermissions)
+            
+            viewModel.updatePermissionState(false)
+            val updatedState = awaitItem()
+            assertEquals(false, updatedState.hasPermissions)
+            assertEquals(R.string.permissions_required_tap_to_grant, updatedState.statusTextRes)
+        }
+    }
+
+    @Test
+    fun `updateBluetoothState updates UI state`() = runTest {
+        viewModel.uiState.test {
+            awaitItem() // Initial
+            
+            viewModel.updateBluetoothState(false)
+            val updatedState = awaitItem()
+            assertEquals(false, updatedState.isBluetoothEnabled)
+            assertEquals(R.string.bluetooth_disabled_tap_to_enable, updatedState.statusTextRes)
+        }
     }
 }

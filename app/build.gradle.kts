@@ -38,6 +38,13 @@ android {
     }
 }
 
+// Force unit tests to run during a standard 'Run' or 'Build' in the IDE
+tasks.whenTaskAdded {
+    if (name == "assembleDebug") {
+        dependsOn("testDebugUnitTest")
+    }
+}
+
 dependencies {
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.core.ktx)
@@ -56,4 +63,5 @@ dependencies {
     androidTestImplementation(libs.androidx.espresso.contrib)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.test.rules)
+    androidTestImplementation(libs.androidx.uiautomator)
 }

@@ -10,10 +10,12 @@ class MainViewModel @JvmOverloads constructor(
     app: Application,
     private val repo: AutomationRepository = AutomationRepository(app),
     private val settings: SettingsRepository = SettingsRepository(app),
-    private val hid: HidServiceManager = HidServiceManager(app),
+    private val hid: HidManager = BluetoothHidManager(app),
 ) : AndroidViewModel(app) {
     private val _isSettingsVisible = MutableStateFlow(value = false)
     private val _activePanel = MutableStateFlow(value = "Main")
+    private val _hasPermissions = MutableStateFlow(value = true)
+    private val _isBluetoothEnabled = MutableStateFlow(value = true)
     val mouseHidService = hid.mouseHidService
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -39,6 +41,8 @@ class MainViewModel @JvmOverloads constructor(
         settings.trackpointSensitivity,
         settings.trackpointCurve,
         settings.isTrackpointAnimationEnabled,
+        _hasPermissions,
+        _isBluetoothEnabled,
     ) { p ->
         @Suppress("UNCHECKED_CAST")
         MainUiState(
@@ -64,6 +68,8 @@ class MainViewModel @JvmOverloads constructor(
             trackpointSensitivity = p[18] as Float,
             trackpointCurve = p[19] as String,
             isTrackpointAnimationEnabled = p[20] as Boolean,
+            hasPermissions = p[21] as Boolean,
+            isBluetoothEnabled = p[22] as Boolean,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), MainUiState())
 
@@ -93,9 +99,21 @@ class MainViewModel @JvmOverloads constructor(
         hid.startAndBind()
     }
 
+    /** Updates the internal permission state. */
+    fun updatePermissionState(has: Boolean) { _hasPermissions.value = has }
+    /** Updates the internal bluetooth hardware state. */
+    fun updateBluetoothState(enabled: Boolean) { _isBluetoothEnabled.value = enabled }
+
     /** Navigation and panel management. */
     fun setSettingsVisible(v: Boolean) { _isSettingsVisible.value = v }
     fun setActivePanel(panel: String) { _activePanel.value = panel }
+
+    /** Internal for testing: Adds a dummy recording to the list. */
+    fun addDummyRecording(name: String) {
+        val newList = repo.recordings.value.toMutableList()
+        newList.add(InputRecording(name, System.currentTimeMillis(), 5000, 10, "data"))
+        repo.saveRecordings(newList)
+    }
 
     /** Autoclicker management. */
     fun toggleAutoclicker() = mouseHidService.value?.toggleAutomation()

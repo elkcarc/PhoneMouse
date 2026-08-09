@@ -24,8 +24,15 @@ data class MainUiState(
     val trackpointSensitivity: Float = 1.5f,
     val trackpointCurve: String = "Linear",
     val isTrackpointAnimationEnabled: Boolean = true,
+    val hasPermissions: Boolean = true,
+    val isBluetoothEnabled: Boolean = true,
 ) {
-    val statusTextRes = if (isConnected) R.string.connected else R.string.disconnected_tap_to_open_bluetooth_settings
+    val statusTextRes = when {
+        !hasPermissions -> R.string.permissions_required_tap_to_grant
+        !isBluetoothEnabled -> R.string.bluetooth_disabled_tap_to_enable
+        isConnected -> R.string.connected
+        else -> R.string.disconnected_tap_to_open_bluetooth_settings
+    }
     val isTrackpadMode = trackpadMode == "Trackpad"
     val isTrackpadTrailControlEnabled = isTrackpadMode
     val isTrackpadSensitivityControlEnabled = isTrackpadMode

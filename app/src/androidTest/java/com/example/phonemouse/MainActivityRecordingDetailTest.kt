@@ -21,7 +21,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
-class MainActivityInteractionTest {
+class MainActivityRecordingDetailTest {
 
     @Rule
     @JvmField
@@ -38,10 +38,17 @@ class MainActivityInteractionTest {
     )
 
     @Test
-    fun testProfileDeletionUI() {
+    fun testEditAndRemoveRecordingUI() {
+        val dummyName = "UI Recording Test"
+        
+        activityRule.scenario.onActivity { activity ->
+            val viewModel = androidx.lifecycle.ViewModelProvider(activity)[MainViewModel::class.java]
+            viewModel.addDummyRecording(dummyName)
+        }
+        
         onView(withContentDescription("Open drawer")).perform(click())
         Thread.sleep(500)
-        onView(withId(R.id.profilesBtn)).perform(click())
+        onView(withId(R.id.recordingsBtn)).perform(click())
         Thread.sleep(500)
 
         // Lock drawer
@@ -49,32 +56,33 @@ class MainActivityInteractionTest {
             activity.findViewById<DrawerLayout>(R.id.drawerLayout).setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_OPEN)
         }
 
-        // Create one
-        onView(withId(R.id.addVariationBtn)).perform(click())
+        // Swipe Right
+        onView(withId(R.id.recordingsRecyclerView)).perform(
+            RecyclerViewActions.actionOnItem<RecyclerView.ViewHolder>(
+                hasDescendant(withText(dummyName)),
+                GeneralSwipeAction(Swipe.SLOW, GeneralLocation.CENTER_LEFT, GeneralLocation.CENTER_RIGHT, Press.FINGER)
+            )
+        )
         Thread.sleep(1000)
-        onView(withId(R.id.editName)).perform(replaceText("To Delete"), closeSoftKeyboard())
+
+        onView(withId(R.id.editRecName)).perform(replaceText("UI Updated Name"), closeSoftKeyboard())
         onView(withId(android.R.id.button1)).perform(click())
         Thread.sleep(1000)
 
-        // Swipe Left deliberately
-        onView(withId(R.id.configsRecyclerView)).perform(
+        onView(withText("UI Updated Name")).check(matches(isDisplayed()))
+
+        // Delete
+        onView(withId(R.id.recordingsRecyclerView)).perform(
             RecyclerViewActions.actionOnItem<RecyclerView.ViewHolder>(
-                hasDescendant(withText("To Delete")),
+                hasDescendant(withText("UI Updated Name")),
                 GeneralSwipeAction(Swipe.SLOW, GeneralLocation.CENTER_RIGHT, GeneralLocation.CENTER_LEFT, Press.FINGER)
             )
         )
         Thread.sleep(1000)
 
-        // Verify Dialog
-        onView(withText(R.string.confirm_delete_title)).check(matches(isDisplayed()))
         onView(withId(android.R.id.button1)).perform(click())
         Thread.sleep(1000)
 
-        onView(withText("To Delete")).check(doesNotExist())
-        
-        // Unlock
-        activityRule.scenario.onActivity { activity ->
-            activity.findViewById<DrawerLayout>(R.id.drawerLayout).setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED)
-        }
+        onView(withText("UI Updated Name")).check(doesNotExist())
     }
 }
