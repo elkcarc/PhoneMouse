@@ -42,7 +42,7 @@ class TrackpadView @JvmOverloads constructor(context: Context, attrs: AttributeS
     private val manager = TrackpadManager(
         onMove = { dx, dy -> onMove?.invoke(dx, dy) },
         onScroll = { delta -> onScroll?.invoke(delta) },
-        onButtonClick = { mask, pressed -> onButtonClick?.invoke(mask, pressed) }
+        onButtonClick = { mask, pressed -> onButtonClick?.invoke(mask, pressed) },
     ) { x, y ->
         icon?.translationX = x
         icon?.translationY = y
@@ -79,7 +79,7 @@ class TrackpadView @JvmOverloads constructor(context: Context, attrs: AttributeS
         if ((e.actionMasked == MotionEvent.ACTION_DOWN) || (e.actionMasked == MotionEvent.ACTION_POINTER_DOWN)) {
             performClick()
         }
-        if (e.actionMasked == MotionEvent.ACTION_UP || e.actionMasked == MotionEvent.ACTION_CANCEL) {
+        if ((e.actionMasked == MotionEvent.ACTION_UP) || (e.actionMasked == MotionEvent.ACTION_CANCEL)) {
             resetIcon()
         }
         // Add trail points

@@ -89,7 +89,7 @@ class MainActivityRecordingDetailTest {
                         Swipe.SLOW,
                         GeneralLocation.CENTER_LEFT,
                         GeneralLocation.CENTER_RIGHT,
-                        Press.FINGER,
+                        Press.FINGER
                     )
                 )
             )
@@ -109,7 +109,7 @@ class MainActivityRecordingDetailTest {
                         Swipe.SLOW,
                         GeneralLocation.CENTER_RIGHT,
                         GeneralLocation.CENTER_LEFT,
-                        Press.FINGER,
+                        Press.FINGER
                     )
                 )
             )
@@ -147,7 +147,7 @@ class MainActivityRecordingDetailTest {
                         Swipe.SLOW,
                         GeneralLocation.CENTER_LEFT,
                         GeneralLocation.CENTER_RIGHT,
-                        Press.FINGER,
+                        Press.FINGER
                     )
                 )
             )
@@ -187,7 +187,7 @@ class MainActivityRecordingDetailTest {
                         Swipe.SLOW,
                         GeneralLocation.CENTER_RIGHT,
                         GeneralLocation.CENTER_LEFT,
-                        Press.FINGER,
+                        Press.FINGER
                     )
                 )
             )

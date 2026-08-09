@@ -121,7 +121,7 @@ class TrackpadManager(
                 return true
             }
             MotionEvent.ACTION_POINTER_DOWN -> {
-                if (isTwoFingerScrollEnabled && mode == "Trackpad" && secondPointerId == MotionEvent.INVALID_POINTER_ID) {
+                if (isTwoFingerScrollEnabled && (mode == "Trackpad") && (secondPointerId == MotionEvent.INVALID_POINTER_ID)) {
                     val idx = event.actionIndex
                     secondPointerId = event.getPointerId(idx)
                     lastSecondY = event.getY(idx)
@@ -135,7 +135,7 @@ class TrackpadManager(
                         val x = event.getX(idx)
                         val y = event.getY(idx)
                         
-                        if (isTwoFingerScrollEnabled && secondPointerId != MotionEvent.INVALID_POINTER_ID && mode == "Trackpad") {
+                        if (isTwoFingerScrollEnabled && (secondPointerId != MotionEvent.INVALID_POINTER_ID) && (mode == "Trackpad")) {
                             val sIdx = event.findPointerIndex(secondPointerId)
                             if (sIdx != -1) {
                                 val sy = event.getY(sIdx)

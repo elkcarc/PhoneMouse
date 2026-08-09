@@ -178,7 +178,7 @@ class MainActivity : AppCompatActivity() {
                     else dialogs.showEditProfileDialog(pos)
                     configAdapter.notifyItemChanged(pos)
                 }
-            }
+            },
         )
         configTouchHelper.attachToRecyclerView(binding.navDrawerMain.configsRecyclerView)
         configAdapter = ConfigsAdapter(
@@ -200,7 +200,7 @@ class MainActivity : AppCompatActivity() {
                     else dialogs.showEditRecordingDialog(pos)
                     recordingAdapter.notifyItemChanged(pos)
                 }
-            }
+            },
         )
         recordingTouchHelper.attachToRecyclerView(binding.navDrawerMain.recordingsRecyclerView)
         recordingAdapter = RecordingsAdapter(
@@ -330,8 +330,8 @@ class MainActivity : AppCompatActivity() {
             }
             backgroundTintList = ColorStateList.valueOf(statusColor)
             text = when {
-                (s.isConnected && s.isTestMode && s.connectedDeviceName != null) -> getString(R.string.connected_test_mode, s.connectedDeviceName)
-                s.isConnected && s.connectedDeviceName != null -> getString(R.string.connected_to, s.connectedDeviceName)
+                (s.isConnected && s.isTestMode && (s.connectedDeviceName != null)) -> getString(R.string.connected_test_mode, s.connectedDeviceName)
+                s.isConnected && (s.connectedDeviceName != null) -> getString(R.string.connected_to, s.connectedDeviceName)
                 else -> getString(s.statusTextRes)
             }
         }

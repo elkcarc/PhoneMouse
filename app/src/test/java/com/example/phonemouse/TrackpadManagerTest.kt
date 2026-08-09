@@ -29,11 +29,10 @@ class TrackpadManagerTest {
             },
             onScroll = { _ -> },
             onButtonClick = { _, _ -> },
-            onUpdateAnimation = { x, y ->
-                lastAnimX = x
-                lastAnimY = y
-            }
-        )
+        ) { x, y ->
+            lastAnimX = x
+            lastAnimY = y
+        }
         manager.onSizeChanged(1000, 1000)
     }
 
@@ -84,6 +83,12 @@ class TrackpadManagerTest {
         assertEquals(50f, lastAnimX)
     }
 
+    /**
+     * Purpose: Verify that trackpoint mode correctly calculates quadratic velocity.
+     * Before State: Trackpoint mode active, Quadratic curve selected.
+     * During Test: Places touch 100 pixels away from the 500px center (nx=0.2).
+     * After State: Verification that a velocity of 1px is generated (0.2^2 * 25).
+     */
     @Test
     fun `trackpoint mode quadratic curve`() {
         manager.mode = "Trackpoint"
@@ -101,6 +106,12 @@ class TrackpadManagerTest {
         assertEquals(50f, lastAnimX)
     }
 
+    /**
+     * Purpose: Verify that trackpoint mode correctly calculates cubic velocity.
+     * Before State: Trackpoint mode active, Cubic curve selected.
+     * During Test: Places touch 250 pixels away from center (nx=0.5).
+     * After State: Verification that a velocity of 3px is generated (0.5^3 * 25 = 3.125).
+     */
     @Test
     fun `trackpoint mode cubic curve`() {
         manager.mode = "Trackpoint"
@@ -117,6 +128,12 @@ class TrackpadManagerTest {
         assertEquals(125f, lastAnimX) // 0.5 * 250
     }
 
+    /**
+     * Purpose: Verify that trackpad mode acceleration scales delta correctly.
+     * Before State: Trackpad mode active, acceleration set to 1.5.
+     * During Test: Moves 100 pixels (smooth=75).
+     * After State: Verification that moveX is approx 649 (75 * 75^0.5).
+     */
     @Test
     fun `trackpad mode acceleration`() {
         manager.mode = "Trackpad"
@@ -133,6 +150,12 @@ class TrackpadManagerTest {
         assertEquals(649, lastDx)
     }
 
+    /**
+     * Purpose: Verify that sensitivity multiplier applies to smoothed trackpad movement.
+     * Before State: Trackpad mode active, sensitivity at 2.0.
+     * During Test: Injects ACTION_MOVE (10, 20).
+     * After State: Verification that smoothed delta (7.5, 15) is doubled to (15, 30).
+     */
     @Test
     fun `trackpad mode with sensitivity and smoothing`() {
         manager.mode = "Trackpad"
@@ -149,6 +172,12 @@ class TrackpadManagerTest {
         assertEquals(30, lastDy)
     }
 
+    /**
+     * Purpose: Verify sub-pixel accumulation allows fine movement at low sensitivity.
+     * Before State: Trackpad mode active, sensitivity at 0.1.
+     * During Test: Performs two consecutive 10px moves.
+     * After State: Verification that first move generates 0px and second generates 1px.
+     */
     @Test
     fun `trackpad sub-pixel accumulation with smoothing`() {
         manager.mode = "Trackpad"

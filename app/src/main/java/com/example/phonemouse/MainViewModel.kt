@@ -97,7 +97,7 @@ class MainViewModel @JvmOverloads constructor(
                         timestamp = System.currentTimeMillis(),
                         durationMs = service.lastRecordingDuration,
                         clickCount = service.lastRecordingClicks,
-                        data = data
+                        data = data,
                     )
                     newList.add(recording)
                     repo.saveRecordings(newList)
@@ -220,8 +220,12 @@ class MainViewModel @JvmOverloads constructor(
         val newList = repo.recordings.value.toMutableList()
         if ((from in newList.indices) && (to in newList.indices)) {
             newList.add(to, newList.removeAt(from))
-            val cur = repo.selectedRecordingIndex.value
-            val next = when (cur) { from -> to; in (from + 1)..to -> cur - 1; in to until from -> cur + 1; else -> cur }
+            val next = when (val cur = repo.selectedRecordingIndex.value) {
+                from -> to
+                in (from + 1)..to -> cur - 1
+                in to until from -> cur + 1
+                else -> cur
+            }
             repo.saveSelectedRecordingIndex(next)
             repo.saveRecordings(newList)
         }

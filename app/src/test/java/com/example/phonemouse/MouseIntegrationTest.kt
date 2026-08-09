@@ -107,6 +107,28 @@ class MouseIntegrationTest {
         verify { hid.sendReport(host, 0, match { it.contentEquals(byteArrayOf(0, 10, 10, 0)) }) }
     }
 
+    /**
+     * Purpose: Verify that the automation loop correctly posts delayed clicks.
+     * Before State: Automation config registered.
+     * During Test: Calls toggleAutomation().
+     * After State: Verification that button report packets (Down then Up) are dispatched through the handler.
+     */
+    @Test
+    fun `automation start sends correct button report`() {
+        val profile = AutomationConfig("Test", 100, 100, 50, 50, 1000, 1000, 100)
+        service = MouseHidService(context, hid, handler)
+        service.setTestHost(host)
+        service.registerProfile()
+        service.setConfig(profile)
+        service.toggleAutomation()
+        assertEquals(1, postedRunnables.size)
+        pumpRunnables()
+        verify { hid.sendReport(host, 0, match { it[0] == 0x01.toByte() }) }
+        assertEquals(1, postedRunnables.size)
+        pumpRunnables()
+        verify { hid.sendReport(host, 0, match { it[0] == 0x00.toByte() }) }
+    }
+
     @Test
     fun `automation jitter analysis verifies gaussian-like distribution`() {
         /**
@@ -141,6 +163,12 @@ class MouseIntegrationTest {
         assertTrue("Expected variation in intervals, got $uniqueDelays unique values", uniqueDelays > 5)
     }
 
+    /**
+     * Purpose: Verify that scroll commands result in correct 4th-byte HID packets.
+     * Before State: HID service initialized.
+     * During Test: Calls sendManualScroll(-1).
+     * After State: Verification that BluetoothHidDevice.sendReport receives a byte array with [3] = -1.
+     */
     @Test
     fun `scroll sends correct HID delta`() {
         service = MouseHidService(context, hid, handler)

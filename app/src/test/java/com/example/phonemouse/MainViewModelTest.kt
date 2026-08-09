@@ -96,18 +96,36 @@ class MainViewModelTest {
         }
     }
 
+    /**
+     * Purpose: Verify that generateNextProfileName selects "Profile 1" for an empty list.
+     * Before State: Repository has no configs.
+     * During Test: Calls generateNextProfileName().
+     * After State: Returns "Profile 1".
+     */
     @Test
     fun `generateNextProfileName handles empty list`() {
         every { repo.configs.value } returns emptyList()
         assertEquals("Profile 1", viewModel.generateNextProfileName())
     }
 
+    /**
+     * Purpose: Verify that addConfig triggers a save operation in the repository.
+     * Before State: Repository mocked.
+     * During Test: Calls addConfig with dummy data.
+     * After State: Verification that saveConfigs is called.
+     */
     @Test
     fun `addConfig updates repository`() {
         viewModel.addConfig("New Profile", 100, 200, 50, 100, 1000, 2000, 50)
         verify { repo.saveConfigs(any()) }
     }
 
+    /**
+     * Purpose: Verify that deleteConfig removes the correct item and adjusts selection.
+     * Before State: One config in repository.
+     * During Test: Calls deleteConfig(0).
+     * After State: Verification that saveConfigs is called with an empty list.
+     */
     @Test
     fun `deleteConfig updates repository and adjusts selection`() {
         val configs = listOf(AutomationConfig("P1", 0,0,0,0,0,0,0))
@@ -120,6 +138,12 @@ class MainViewModelTest {
         verify { repo.saveSelectedIndex(0) }
     }
 
+    /**
+     * Purpose: Verify that updateConfig modifies the existing entry and notifies the service.
+     * Before State: One config exists.
+     * During Test: Calls updateConfig(0, ...).
+     * After State: Verification that saveConfigs and setConfig on the service are called.
+     */
     @Test
     fun `updateConfig updates repository and service`() {
         val configs = listOf(AutomationConfig("Old", 0,0,0,0,0,0,0))
@@ -133,6 +157,12 @@ class MainViewModelTest {
         verify { mockService.setConfig(any()) }
     }
 
+    /**
+     * Purpose: Verify that toggleAutoclicker in ViewModel calls the underlying service method.
+     * Before State: Service flow emitted.
+     * During Test: Calls toggleAutoclicker().
+     * After State: Verification that service.toggleAutomation() is invoked.
+     */
     @Test
     fun `toggleAutoclicker calls service`() {
         val mockService = mockk<MouseHidService>(relaxed = true)
@@ -142,6 +172,12 @@ class MainViewModelTest {
         verify { mockService.toggleAutomation() }
     }
 
+    /**
+     * Purpose: Verify that toggleRecording in ViewModel calls the underlying service method.
+     * Before State: Service flow emitted.
+     * During Test: Calls toggleRecording().
+     * After State: Verification that service.toggleRecording() is invoked.
+     */
     @Test
     fun `toggleRecording calls service`() {
         val mockService = mockk<MouseHidService>(relaxed = true)
@@ -151,6 +187,12 @@ class MainViewModelTest {
         verify { mockService.toggleRecording() }
     }
 
+    /**
+     * Purpose: Verify that togglePlayback in ViewModel starts playing the selected recording.
+     * Before State: One recording exists and is selected.
+     * During Test: Calls togglePlayback().
+     * After State: Verification that service.togglePlayback() is called with the correct data.
+     */
     @Test
     fun `togglePlayback calls service with current recording`() {
         val recording = InputRecording("R1", 0, 0, 0, "data", true)
@@ -163,6 +205,12 @@ class MainViewModelTest {
         verify { mockService.togglePlayback("data", true) }
     }
 
+    /**
+     * Purpose: Verify that moveConfig reorders the list and updates the selected index to keep the same item active.
+     * Before State: Three configs exist, P2 is selected (index 1).
+     * During Test: Moves P1 from 0 to 1.
+     * After State: Verification that selected index is updated to 0 (where P2 moved).
+     */
     @Test
     fun `moveConfig reorders list and preserves selection`() {
         val configs = listOf(
@@ -182,6 +230,12 @@ class MainViewModelTest {
         verify { repo.saveSelectedIndex(0) }
     }
 
+    /**
+     * Purpose: Verify that moveRecording reorders the macro list and preserves selection.
+     * Before State: Two recordings exist, R2 is selected (index 1).
+     * During Test: Moves R2 from 1 to 0.
+     * After State: Verification that selected index is updated to 0.
+     */
     @Test
     fun `moveRecording reorders list and preserves selection`() {
         val recordings = listOf(
@@ -198,6 +252,12 @@ class MainViewModelTest {
         verify { repo.saveSelectedRecordingIndex(0) }
     }
 
+    /**
+     * Purpose: Verify that deleteRecording removes the macro and adjusts selection.
+     * Before State: one recording exists.
+     * During Test: Calls deleteRecording(0).
+     * After State: Verification that saveRecordings is called with an empty list.
+     */
     @Test
     fun `deleteRecording updates repository`() {
         val recordings = listOf(InputRecording("R1", 0,0,0,"",false))
@@ -210,6 +270,12 @@ class MainViewModelTest {
         verify { repo.saveSelectedRecordingIndex(0) }
     }
 
+    /**
+     * Purpose: Verify that generateNextProfileName fills gaps in naming correctly.
+     * Before State: Repository has "Profile 1" and "Profile 3".
+     * During Test: Calls generateNextProfileName().
+     * After State: Verification that "Profile 2" is selected to fill the gap.
+     */
     @Test
     fun `generateNextProfileName with gaps`() {
         every { repo.configs.value } returns listOf(
@@ -220,6 +286,12 @@ class MainViewModelTest {
         assertEquals("Profile 2", viewModel.generateNextProfileName())
     }
 
+    /**
+     * Purpose: Verify that renameRecording updates the repository data.
+     * Before State: One recording in repository.
+     * During Test: Calls renameRecording(0, "New Name").
+     * After State: Verification that saveRecordings is called with the updated name.
+     */
     @Test
     fun `renameRecording updates repository`() {
         val recordings = listOf(InputRecording("Old", 0,0,0,"",false))
@@ -230,6 +302,12 @@ class MainViewModelTest {
         verify { repo.saveRecordings(match { it[0].name == "New Name" }) }
     }
 
+    /**
+     * Purpose: Verify that updateRecordingLoop toggles the loop flag in the repository.
+     * Before State: One recording in repository with loopPlayback = false.
+     * During Test: Calls updateRecordingLoop(0, true).
+     * After State: Verification that saveRecordings is called with loopPlayback = true.
+     */
     @Test
     fun `updateRecordingLoop updates repository`() {
         val recordings = listOf(InputRecording("R1", 0,0,0,"",false))
@@ -240,6 +318,12 @@ class MainViewModelTest {
         verify { repo.saveRecordings(match { it[0].loopPlayback }) }
     }
 
+    /**
+     * Purpose: Verify that settings updates in ViewModel propagate to SettingsRepository.
+     * Before State: ViewModel initialized.
+     * During Test: Calls multiple setting update methods.
+     * After State: Verification that corresponding save methods in repository are called.
+     */
     @Test
     fun `settings updates call repository`() {
         viewModel.setThemeMode("Dark")
@@ -255,6 +339,12 @@ class MainViewModelTest {
         verify { settings.saveConfirmDelete(false) }
     }
 
+    /**
+     * Purpose: Verify that updatePermissionState updates the UI state stream.
+     * Before State: Initial state active.
+     * During Test: Calls updatePermissionState(false).
+     * After State: uiState emits a new state with hasPermissions = false.
+     */
     @Test
     fun `updatePermissionState updates UI state`() = runTest {
         viewModel.uiState.test {
@@ -268,6 +358,12 @@ class MainViewModelTest {
         }
     }
 
+    /**
+     * Purpose: Verify that updateBluetoothState updates the UI state stream.
+     * Before State: Initial state active.
+     * During Test: Calls updateBluetoothState(false).
+     * After State: uiState emits a new state with isBluetoothEnabled = false.
+     */
     @Test
     fun `updateBluetoothState updates UI state`() = runTest {
         viewModel.uiState.test {
