@@ -42,7 +42,7 @@ class MainActivityRecordingDetailTest {
         Manifest.permission.BLUETOOTH_ADVERTISE,
         Manifest.permission.POST_NOTIFICATIONS,
         Manifest.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE,
-        Manifest.permission.ACCESS_FINE_LOCATION
+        Manifest.permission.ACCESS_FINE_LOCATION,
     )
 
     @Before
@@ -70,7 +70,7 @@ class MainActivityRecordingDetailTest {
             val dummyName = "UI Recording Test"
             
             scenario.onActivity { activity ->
-                val viewModel = androidx.lifecycle.ViewModelProvider(activity)[MainViewModel::class.java]
+                val viewModel = ViewModelProvider(activity)[MainViewModel::class.java]
                 viewModel.addDummyRecording(dummyName)
             }
             
@@ -89,7 +89,7 @@ class MainActivityRecordingDetailTest {
                         Swipe.SLOW,
                         GeneralLocation.CENTER_LEFT,
                         GeneralLocation.CENTER_RIGHT,
-                        Press.FINGER
+                        Press.FINGER,
                     )
                 )
             )
@@ -109,7 +109,7 @@ class MainActivityRecordingDetailTest {
                         Swipe.SLOW,
                         GeneralLocation.CENTER_RIGHT,
                         GeneralLocation.CENTER_LEFT,
-                        Press.FINGER
+                        Press.FINGER,
                     )
                 )
             )
@@ -147,7 +147,7 @@ class MainActivityRecordingDetailTest {
                         Swipe.SLOW,
                         GeneralLocation.CENTER_LEFT,
                         GeneralLocation.CENTER_RIGHT,
-                        Press.FINGER
+                        Press.FINGER,
                     )
                 )
             )
@@ -187,7 +187,7 @@ class MainActivityRecordingDetailTest {
                         Swipe.SLOW,
                         GeneralLocation.CENTER_RIGHT,
                         GeneralLocation.CENTER_LEFT,
-                        Press.FINGER
+                        Press.FINGER,
                     )
                 )
             )

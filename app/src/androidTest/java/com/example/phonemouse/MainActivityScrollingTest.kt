@@ -5,7 +5,6 @@ import android.app.Application
 import android.content.Context
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat
-import androidx.drawerlayout.widget.DrawerLayout
 import androidx.lifecycle.ViewModelProvider
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
@@ -38,7 +37,7 @@ class MainActivityScrollingTest {
         Manifest.permission.BLUETOOTH_CONNECT,
         Manifest.permission.POST_NOTIFICATIONS,
         Manifest.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE,
-        Manifest.permission.ACCESS_FINE_LOCATION
+        Manifest.permission.ACCESS_FINE_LOCATION,
     )
 
     @Before
@@ -78,7 +77,7 @@ class MainActivityScrollingTest {
             // Scroll to the last item
             onView(withId(R.id.configsRecyclerView)).perform(
                 RecyclerViewActions.scrollTo<androidx.recyclerview.widget.RecyclerView.ViewHolder>(
-                    hasDescendant(withText("Scroll Profile 20"))
+                    hasDescendant(withText("Scroll Profile 20")),
                 )
             )
 

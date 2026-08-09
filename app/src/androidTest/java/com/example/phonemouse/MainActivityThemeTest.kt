@@ -16,7 +16,6 @@ import androidx.test.espresso.assertion.ViewAssertions.matches
 import androidx.test.espresso.matcher.BoundedMatcher
 import androidx.test.espresso.matcher.RootMatchers.isPlatformPopup
 import androidx.test.espresso.matcher.ViewMatchers.*
-import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.rule.GrantPermissionRule
 import org.hamcrest.Description
@@ -40,7 +39,7 @@ class MainActivityThemeTest {
     val grantPermissionRule: GrantPermissionRule = GrantPermissionRule.grant(
         Manifest.permission.BLUETOOTH_CONNECT,
         Manifest.permission.POST_NOTIFICATIONS,
-        Manifest.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE
+        Manifest.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE,
     )
 
     @Before

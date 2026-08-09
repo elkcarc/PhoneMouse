@@ -2,7 +2,6 @@ package com.example.phonemouse
 
 import android.Manifest
 import android.app.Application
-import android.bluetooth.BluetoothAdapter
 import android.content.Context
 import android.view.View
 import androidx.appcompat.app.AppCompatDelegate
@@ -12,7 +11,6 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.RecyclerView
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
-import androidx.test.espresso.Espresso.onData
 import androidx.test.espresso.Espresso.onView
 import androidx.test.espresso.UiController
 import androidx.test.espresso.ViewAction
@@ -47,7 +45,9 @@ class MainActivityFunctionalTest {
     private val fakeService = MouseHidService(ApplicationProvider.getApplicationContext<Application>()).apply {
         isTestMode = true
         try {
-            setTestHost(BluetoothAdapter.getDefaultAdapter().getRemoteDevice("00:11:22:33:44:55"), "DummyHost")
+            val context = ApplicationProvider.getApplicationContext<Application>()
+            val bluetoothManager = context.getSystemService(Context.BLUETOOTH_SERVICE) as android.bluetooth.BluetoothManager
+            setTestHost(bluetoothManager.adapter.getRemoteDevice("00:11:22:33:44:55"), "DummyHost")
         } catch (_: Exception) {}
     }
 
@@ -59,7 +59,7 @@ class MainActivityFunctionalTest {
         Manifest.permission.BLUETOOTH_ADVERTISE,
         Manifest.permission.POST_NOTIFICATIONS,
         Manifest.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE,
-        Manifest.permission.ACCESS_FINE_LOCATION
+        Manifest.permission.ACCESS_FINE_LOCATION,
     )
 
     private lateinit var device: UiDevice
@@ -132,7 +132,7 @@ class MainActivityFunctionalTest {
             onView(withId(R.id.configsRecyclerView)).perform(
                 RecyclerViewActions.actionOnItem<RecyclerView.ViewHolder>(
                     hasDescendant(withText("Fast Delete")),
-                    androidx.test.espresso.action.GeneralSwipeAction(
+                    GeneralSwipeAction(
                         Swipe.SLOW,
                         GeneralLocation.CENTER_RIGHT,
                         GeneralLocation.CENTER_LEFT,
@@ -163,12 +163,12 @@ class MainActivityFunctionalTest {
             onView(withId(R.id.drawerLayout)).perform(DrawerActions.close())
             Thread.sleep(500)
 
-            val microSwipe = androidx.test.espresso.action.GeneralSwipeAction(
+            val microSwipe = GeneralSwipeAction(
                 Swipe.FAST,
                 GeneralLocation.CENTER,
-                { view -> 
+                { view ->
                     val loc = IntArray(2); view.getLocationOnScreen(loc)
-                    floatArrayOf(loc[0] + view.width / 2f + 10f, loc[1] + view.height / 2f) 
+                    floatArrayOf(loc[0] + (view.width / 2f) + 10f, loc[1] + (view.height / 2f))
                 },
                 Press.FINGER
             )
@@ -272,10 +272,17 @@ class MainActivityFunctionalTest {
             Thread.sleep(500)
 
             totalDx = 0
-            onView(withId(R.id.trackpad)).perform(androidx.test.espresso.action.GeneralSwipeAction(Swipe.SLOW, GeneralLocation.CENTER, { v -> 
-                val loc = IntArray(2); v.getLocationOnScreen(loc)
-                floatArrayOf(loc[0] + v.width * 0.7f, loc[1] + v.height / 2f) 
-            }, Press.FINGER))
+            onView(withId(R.id.trackpad)).perform(
+                GeneralSwipeAction(
+                    Swipe.SLOW,
+                    GeneralLocation.CENTER,
+                    { v ->
+                        val loc = IntArray(2); v.getLocationOnScreen(loc)
+                        floatArrayOf(loc[0] + (v.width * 0.7f), loc[1] + (v.height / 2f))
+                    },
+                    Press.FINGER
+                )
+            )
             Thread.sleep(1000)
             val dxLinear = totalDx
 
@@ -291,10 +298,17 @@ class MainActivityFunctionalTest {
             Thread.sleep(500)
 
             totalDx = 0
-            onView(withId(R.id.trackpad)).perform(androidx.test.espresso.action.GeneralSwipeAction(Swipe.SLOW, GeneralLocation.CENTER, { v -> 
-                val loc = IntArray(2); v.getLocationOnScreen(loc)
-                floatArrayOf(loc[0] + v.width * 0.7f, loc[1] + v.height / 2f) 
-            }, Press.FINGER))
+            onView(withId(R.id.trackpad)).perform(
+                GeneralSwipeAction(
+                    Swipe.SLOW,
+                    GeneralLocation.CENTER,
+                    { v ->
+                        val loc = IntArray(2); v.getLocationOnScreen(loc)
+                        floatArrayOf(loc[0] + (v.width * 0.7f), loc[1] + (v.height / 2f))
+                    },
+                    Press.FINGER
+                )
+            )
             Thread.sleep(1000)
             val dxCubic = totalDx
 

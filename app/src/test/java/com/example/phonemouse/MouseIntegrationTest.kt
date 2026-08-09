@@ -76,7 +76,7 @@ class MouseIntegrationTest {
         service.sendManualMove(5, 5)
 
         every { SystemClock.elapsedRealtime() } returns 1250L
-        service.setButtonState(0x01, true)
+        service.setButtonState(mask = 0x01, pressed = true)
 
         var finishedData: String? = null
         service.setOnRecordingFinishedListener { finishedData = it }
@@ -100,7 +100,7 @@ class MouseIntegrationTest {
         service.setTestHost(host)
         
         val data = "100:0,10,10,0;300:1,0,0,0"
-        service.togglePlayback(data, false)
+        service.togglePlayback(data, loop = false)
         
         // Execute first event (100ms)
         postedRunnables[0].run()
@@ -131,7 +131,7 @@ class MouseIntegrationTest {
         service.toggleAutomation()
         
         // Run many cycles
-        for (i in 0 until 50) {
+        repeat(50) {
             pumpRunnables() // Click down -> posts click up delay
             pumpRunnables() // Click up -> posts next interval
         }

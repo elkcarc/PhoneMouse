@@ -80,7 +80,7 @@ class MainActivity : AppCompatActivity() {
                         }
                     }
                 }
-            }
+            },
         )
     }
 
@@ -325,7 +325,7 @@ class MainActivity : AppCompatActivity() {
             }
             backgroundTintList = ColorStateList.valueOf(statusColor)
             text = when {
-                s.isConnected && s.isTestMode && s.connectedDeviceName != null -> getString(R.string.connected_test_mode, s.connectedDeviceName)
+                (s.isConnected && s.isTestMode && s.connectedDeviceName != null) -> getString(R.string.connected_test_mode, s.connectedDeviceName)
                 s.isConnected && s.connectedDeviceName != null -> getString(R.string.connected_to, s.connectedDeviceName)
                 else -> getString(s.statusTextRes)
             }

@@ -159,7 +159,7 @@ class MouseHidService(
                     {
                         if (_isPlaying.value) sendReportInternal(event.second)
                     },
-                    event.first
+                    event.first,
                 )
             }
             val totalDuration = events.last().first
