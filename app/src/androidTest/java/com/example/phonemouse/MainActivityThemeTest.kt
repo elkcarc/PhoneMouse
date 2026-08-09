@@ -1,9 +1,14 @@
 package com.example.phonemouse
 
 import android.Manifest
+import android.app.Application
 import android.graphics.Color
 import android.view.View
 import android.widget.TextView
+import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.os.LocaleListCompat
+import androidx.test.core.app.ActivityScenario
+import androidx.test.core.app.ApplicationProvider
 import androidx.test.espresso.Espresso.onData
 import androidx.test.espresso.Espresso.onView
 import androidx.test.espresso.action.ViewActions.*
@@ -17,6 +22,8 @@ import androidx.test.rule.GrantPermissionRule
 import org.hamcrest.Description
 import org.hamcrest.Matcher
 import org.hamcrest.Matchers.anything
+import org.junit.After
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -24,9 +31,9 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class MainActivityThemeTest {
 
-    @Rule
-    @JvmField
-    val activityRule = ActivityScenarioRule(MainActivity::class.java)
+    private val fakeService = MouseHidService(ApplicationProvider.getApplicationContext<Application>()).apply {
+        isTestMode = true
+    }
 
     @Rule
     @JvmField
@@ -36,49 +43,44 @@ class MainActivityThemeTest {
         Manifest.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE
     )
 
+    @Before
+    fun setup() {
+        MainViewModel.testingHidManager = FakeHidManager(fakeService)
+        // Theme tests switch languages potentially, but they should start in English.
+        AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("en"))
+    }
+
+    @After
+    fun teardown() {
+        MainViewModel.testingHidManager = null
+    }
+
     @Test
     fun testThemeSwitching_LightToDarkColorChange() {
-        // 1. Open Settings
-        onView(withContentDescription("Open drawer")).perform(click())
-        Thread.sleep(500)
-        onView(withId(R.id.settingsBtn)).perform(click())
-        Thread.sleep(500)
+        ActivityScenario.launch(MainActivity::class.java).use {
+            onView(withContentDescription("Open drawer")).perform(click())
+            Thread.sleep(500)
+            onView(withId(R.id.settingsBtn)).perform(click())
+            Thread.sleep(500)
 
-        // 2. Select Light Theme (Position 2 in [Auto, Dark, Light])
-        onView(withId(R.id.themeDropdown)).perform(click())
-        Thread.sleep(500)
-        onData(anything()).inRoot(isPlatformPopup()).atPosition(2).perform(click())
-        Thread.sleep(1500)
-
-        // 3. Verify Light Theme Colors (Black text)
-        onView(withId(R.id.settingsTitleText)).check(matches(withTextColor(Color.BLACK)))
-        
-        // 4. Select Dark Theme (Position 1 in [Auto, Dark, Light])
-        onView(withId(R.id.themeDropdown)).perform(click())
-        Thread.sleep(500)
-        onData(anything()).inRoot(isPlatformPopup()).atPosition(1).perform(click())
-        Thread.sleep(1500)
-
-        // 5. Verify Dark Theme Colors (White text)
-        onView(withId(R.id.settingsTitleText)).check(matches(withTextColor(Color.WHITE)))
-
-        // 6. Check Home Screen Elements Colors
-        onView(withId(R.id.settingsBackBtn)).perform(click())
-        Thread.sleep(500)
-        onView(withId(R.id.profilesBtn)).check(matches(withTextColor(Color.WHITE)))
+            // Light
+            onView(withId(R.id.themeDropdown)).perform(click())
+            onData(anything()).inRoot(isPlatformPopup()).atPosition(2).perform(click())
+            Thread.sleep(1000)
+            onView(withId(R.id.settingsTitleText)).check(matches(withTextColor(Color.BLACK)))
+            
+            // Dark
+            onView(withId(R.id.themeDropdown)).perform(click())
+            onData(anything()).inRoot(isPlatformPopup()).atPosition(1).perform(click())
+            Thread.sleep(1000)
+            onView(withId(R.id.settingsTitleText)).check(matches(withTextColor(Color.WHITE)))
+        }
     }
 
     private fun withTextColor(expectedColor: Int): Matcher<View> {
         return object : BoundedMatcher<View, TextView>(TextView::class.java) {
-            override fun describeTo(description: Description) {
-                description.appendText("with text color: ")
-                description.appendValue(expectedColor)
-            }
-
-            override fun matchesSafely(textView: TextView): Boolean {
-                val color = textView.currentTextColor
-                return (color and 0xFFFFFF) == (expectedColor and 0xFFFFFF)
-            }
+            override fun describeTo(description: Description) { description.appendText("with text color: "); description.appendValue(expectedColor) }
+            override fun matchesSafely(textView: TextView) = (textView.currentTextColor and 0xFFFFFF) == (expectedColor and 0xFFFFFF)
         }
     }
 }

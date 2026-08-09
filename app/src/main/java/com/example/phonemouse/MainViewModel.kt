@@ -10,8 +10,13 @@ class MainViewModel @JvmOverloads constructor(
     app: Application,
     private val repo: AutomationRepository = AutomationRepository(app),
     private val settings: SettingsRepository = SettingsRepository(app),
-    private val hid: HidManager = BluetoothHidManager(app),
+    private val hid: HidManager = testingHidManager ?: BluetoothHidManager(app),
 ) : AndroidViewModel(app) {
+    companion object {
+        /** Internal for testing. Allows providing a mock HID manager before the ViewModel is created. */
+        var testingHidManager: HidManager? = null
+    }
+
     private val _isSettingsVisible = MutableStateFlow(value = false)
     private val _activePanel = MutableStateFlow(value = "Main")
     private val _hasPermissions = MutableStateFlow(value = true)

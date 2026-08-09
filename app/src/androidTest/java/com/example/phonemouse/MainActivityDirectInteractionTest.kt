@@ -1,13 +1,20 @@
 package com.example.phonemouse
 
 import android.Manifest
+import android.app.Application
+import android.content.Context
+import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.os.LocaleListCompat
+import androidx.test.core.app.ActivityScenario
+import androidx.test.core.app.ApplicationProvider
 import androidx.test.espresso.Espresso.onView
 import androidx.test.espresso.action.ViewActions.*
 import androidx.test.espresso.assertion.ViewAssertions.matches
 import androidx.test.espresso.matcher.ViewMatchers.*
-import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.rule.GrantPermissionRule
+import org.junit.After
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -15,9 +22,9 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class MainActivityDirectInteractionTest {
 
-    @Rule
-    @JvmField
-    val activityRule = ActivityScenarioRule(MainActivity::class.java)
+    private val fakeService = MouseHidService(ApplicationProvider.getApplicationContext<Application>()).apply {
+        isTestMode = true
+    }
 
     @Rule
     @JvmField
@@ -27,25 +34,43 @@ class MainActivityDirectInteractionTest {
         Manifest.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE
     )
 
+    @Before
+    fun setup() {
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        context.getSharedPreferences("PhoneMousePrefs", Context.MODE_PRIVATE).edit().clear().commit()
+        AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("en"))
+        
+        MainViewModel.testingHidManager = FakeHidManager(fakeService)
+    }
+
+    @After
+    fun teardown() {
+        MainViewModel.testingHidManager = null
+    }
+
     @Test
     fun testMouseButtonVisualFeedback() {
-        // Verify that clicking mouse buttons doesn't crash and buttons are enabled
-        onView(withId(R.id.leftClickBtn)).perform(click()).check(matches(isEnabled()))
-        onView(withId(R.id.rightClickBtn)).perform(click()).check(matches(isEnabled()))
-        onView(withId(R.id.middleClickBtn)).perform(click()).check(matches(isEnabled()))
+        ActivityScenario.launch(MainActivity::class.java).use {
+            onView(withId(R.id.leftClickBtn)).perform(click()).check(matches(isEnabled()))
+            onView(withId(R.id.rightClickBtn)).perform(click()).check(matches(isEnabled()))
+            onView(withId(R.id.middleClickBtn)).perform(click()).check(matches(isEnabled()))
+        }
     }
 
     @Test
     fun testScrollButtons() {
-        onView(withId(R.id.scrollUpBtn)).perform(click()).check(matches(isDisplayed()))
-        onView(withId(R.id.scrollDownBtn)).perform(click()).check(matches(isDisplayed()))
+        ActivityScenario.launch(MainActivity::class.java).use {
+            onView(withId(R.id.scrollUpBtn)).perform(click()).check(matches(isDisplayed()))
+            onView(withId(R.id.scrollDownBtn)).perform(click()).check(matches(isDisplayed()))
+        }
     }
 
     @Test
     fun testTrackpadInteraction() {
-        // Swipe on trackpad area
-        onView(withId(R.id.trackpad)).perform(swipeRight())
-        onView(withId(R.id.trackpad)).perform(swipeDown())
-        onView(withId(R.id.trackpad)).check(matches(isDisplayed()))
+        ActivityScenario.launch(MainActivity::class.java).use {
+            onView(withId(R.id.trackpad)).perform(swipeRight())
+            onView(withId(R.id.trackpad)).perform(swipeDown())
+            onView(withId(R.id.trackpad)).check(matches(isDisplayed()))
+        }
     }
 }

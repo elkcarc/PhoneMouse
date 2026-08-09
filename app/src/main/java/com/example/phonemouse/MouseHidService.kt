@@ -43,6 +43,11 @@ class MouseHidService(
     
     private var currentRecording = mutableListOf<Pair<Long, ByteArray>>()
     private var recordStartTime: Long = 0
+    /** Internal for testing. Intercepts HID reports before they are sent to the hardware. */
+    var reportInterceptor: ((ByteArray) -> Unit)? = null
+    /** If true, real hardware calls (sendReport) are bypassed. Defaults to false in production. */
+    var isTestMode = false
+
     /** Total duration of the most recently finished recording in ms. */
     var lastRecordingDuration: Long = 0
         private set
@@ -192,6 +197,8 @@ class MouseHidService(
 
     @SuppressLint("MissingPermission")
     private fun sendReportInternal(report: ByteArray) {
+        reportInterceptor?.invoke(report)
+        if (isTestMode) return
         val h = host ?: return
         try {
             hid?.sendReport(h, 0, report)
