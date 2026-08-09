@@ -4,6 +4,4 @@ TODO:
 
 add trackpad mode gestures
 
-add input recording and playback
-
 more robust connectivity
