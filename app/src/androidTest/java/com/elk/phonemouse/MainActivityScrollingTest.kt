@@ -59,16 +59,17 @@ class MainActivityScrollingTest {
 
     /**
      * Purpose: Verify that the Profiles list can be scrolled when it contains many entries.
-     * Before State: 25 profiles are added to the repository.
+     * Before State: 50 profiles are added to the repository.
      * During Test: Opens Profiles panel, scrolls to the end using UI Automator.
-     * After State: Item 25 is found on screen.
+     * After State: Item 50 is found on screen and Item 1 is scrolled out.
      */
     @Test
     fun testProfileListScrolling() {
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
             scenario.onActivity { activity ->
                 val viewModel = ViewModelProvider(activity)[MainViewModel::class.java]
-                for (i in 1..25) {
+                // Add 50 items to ensure scrolling is required even on large screens/tablets
+                for (i in 1..50) {
                     viewModel.addConfig("Scroll Profile $i", 100, 300, 50, 150, 3000, 60000, 500)
                 }
             }
@@ -80,26 +81,35 @@ class MainActivityScrollingTest {
 
             val scrollable = UiScrollable(UiSelector().resourceId("com.elk.phonemouse:id/configsRecyclerView"))
             scrollable.setAsVerticalList()
-            scrollable.scrollToEnd(5)
+            
+            // Verify first item exists before scroll
+            val firstItem = device.findObject(UiSelector().text("Scroll Profile 1"))
+            assert(firstItem.exists()) { "First item should be visible initially" }
+
+            scrollable.scrollToEnd(10)
             Thread.sleep(1000)
 
-            val lastItem = device.findObject(UiSelector().text("Scroll Profile 25"))
-            assert(lastItem.exists()) { "Last item 'Scroll Profile 25' should be found after scrolling to end" }
+            val lastItem = device.findObject(UiSelector().text("Scroll Profile 50"))
+            assert(lastItem.exists()) { "Last item 'Scroll Profile 50' should be found after scrolling to end" }
+            
+            // Verify first item is gone (proving physical scroll happened)
+            assert(!firstItem.exists()) { "First item should be scrolled out of view" }
         }
     }
 
     /**
      * Purpose: Verify that the Recordings list can be scrolled when it contains many entries.
-     * Before State: 20 recordings are added to the repository.
+     * Before State: 40 recordings are added to the repository.
      * During Test: Opens Recordings panel, scrolls to the end using UI Automator.
-     * After State: Recording 20 is found on screen.
+     * After State: Recording 40 is found on screen.
      */
     @Test
     fun testRecordingListScrolling() {
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
             scenario.onActivity { activity ->
                 val viewModel = ViewModelProvider(activity)[MainViewModel::class.java]
-                for (i in 1..20) {
+                // Add 40 items
+                for (i in 1..40) {
                     viewModel.addDummyRecording("Scroll Recording $i")
                 }
             }
@@ -111,11 +121,16 @@ class MainActivityScrollingTest {
 
             val scrollable = UiScrollable(UiSelector().resourceId("com.elk.phonemouse:id/recordingsRecyclerView"))
             scrollable.setAsVerticalList()
-            scrollable.scrollToEnd(5)
+            
+            val firstRec = device.findObject(UiSelector().text("Scroll Recording 1"))
+            assert(firstRec.exists()) { "First recording should be visible initially" }
+
+            scrollable.scrollToEnd(10)
             Thread.sleep(1000)
 
-            val lastRec = device.findObject(UiSelector().text("Scroll Recording 20"))
-            assert(lastRec.exists()) { "Last item 'Scroll Recording 20' should be found after scrolling to end" }
+            val lastRec = device.findObject(UiSelector().text("Scroll Recording 40"))
+            assert(lastRec.exists()) { "Last item 'Scroll Recording 40' should be found after scrolling to end" }
+            assert(!firstRec.exists()) { "First recording should be scrolled out of view" }
         }
     }
 }

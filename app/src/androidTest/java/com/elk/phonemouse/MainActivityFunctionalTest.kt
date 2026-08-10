@@ -94,6 +94,15 @@ class MainActivityFunctionalTest {
         }
     }
 
+    private fun dpToPx(dp: Float): Int {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        return android.util.TypedValue.applyDimension(
+            android.util.TypedValue.COMPLEX_UNIT_DIP,
+            dp,
+            context.resources.displayMetrics
+        ).toInt()
+    }
+
     /**
      * Purpose: Verify that disabling "Confirm before deleting" allows immediate item removal.
      * Before State: App in English, confirmation setting disabled in Settings panel.
@@ -107,6 +116,9 @@ class MainActivityFunctionalTest {
             Thread.sleep(500)
             onView(withId(R.id.settingsBtn)).perform(click())
             Thread.sleep(500)
+            
+            // Ensure keyboard is closed so settings are not obscured
+            onView(isRoot()).perform(closeSoftKeyboard())
             
             // Toggle confirmation OFF
             val scrollable = UiScrollable(UiSelector().scrollable(true))
@@ -168,7 +180,9 @@ class MainActivityFunctionalTest {
                 GeneralLocation.CENTER,
                 { view ->
                     val loc = IntArray(2); view.getLocationOnScreen(loc)
-                    floatArrayOf(loc[0] + (view.width / 2f) + 10f, loc[1] + (view.height / 2f))
+                    // Use 24dp offset to ensure movement is registered on high-res screens
+                    val offset = dpToPx(24f).toFloat()
+                    floatArrayOf(loc[0] + (view.width / 2f) + offset, loc[1] + (view.height / 2f))
                 },
                 Press.FINGER
             )
@@ -223,7 +237,8 @@ class MainActivityFunctionalTest {
             val handle0 = item0.getChild(UiSelector().resourceId("com.elk.phonemouse:id/dragHandle"))
             
             val item1 = rv.getChild(UiSelector().index(1))
-            val targetY = item1.visibleBounds.centerY() + 20
+            // Drag to the center of the next item plus a small relative offset
+            val targetY = item1.visibleBounds.centerY() + dpToPx(10f)
             
             // UI Automator drag with precise coordination
             handle0.dragTo(handle0.visibleBounds.centerX(), targetY, 100)
